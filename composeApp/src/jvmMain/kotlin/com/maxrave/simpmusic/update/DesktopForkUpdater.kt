@@ -47,6 +47,7 @@ object DesktopForkUpdater {
     private const val SITE = "https://nhacnheo.pages.dev"
     private const val GITHUB_RELEASES = "https://api.github.com/repos/baotrq/simpmusic-bao-showcase/releases?per_page=10"
     private const val TAG_PREFIX = "bao-"
+    private const val DISABLED = true
     private const val FIRST_CHECK_DELAY_MS = 10_000L
     private const val CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
     private val VERSION_IN_NAME = Regex("""\d+(?:\.\d+)+""")
@@ -78,7 +79,9 @@ object DesktopForkUpdater {
         currentVersion: String,
         isDevBuild: Boolean,
     ) {
-        if (isDevBuild || platform == null) return
+        // Personal fork: the desktop app never asks upstream (nhacnheo.pages.dev, baotrq's GitHub) for
+        // updates. Rebuild from this repo to update it.
+        if (DISABLED || isDevBuild || platform == null) return
         this.currentVersion = currentVersion
         ForkBuildCheck.check = { scope.launch { checkFromSettings() } }
         ForkBuildCheck.install = { scope.launch { install() } }

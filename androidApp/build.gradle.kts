@@ -45,6 +45,11 @@ android {
         vectorDrawables.useSupportLibrary = true
         // 0 turns the fork updater off; only the personal release build sets it.
         buildConfigField("long", "BAO_COMMIT_TIME", "0L")
+        // Personal fork: the GitHub repo ("owner/name") whose Releases the updater reads. Empty turns
+        // the updater off. CI fills it from GITHUB_REPOSITORY, so the app only ever updates from
+        // the repo it was built in.
+        val updateRepo = (System.getenv("UPDATE_REPO") ?: System.getenv("GITHUB_REPOSITORY") ?: "").trim()
+        buildConfigField("String", "UPDATE_REPO", "\"$updateRepo\"")
         multiDexEnabled = true
 
         @Suppress("UnstableApiUsage")
@@ -102,11 +107,17 @@ android {
     // "update" over the app) and each machine names it in local.properties:
     //   BAO_KEYSTORE=C:/path/to/bao.keystore
     //   BAO_KEYSTORE_PASSWORD, BAO_KEY_ALIAS, BAO_KEY_PASSWORD (default: a debug keystore's values)
+    // The same names may also come from environment variables (GitHub Actions secrets).
     val baoSigning =
-        runCatching {
-            Properties().apply { rootProject.file("local.properties").inputStream().use(::load) }
-        }.getOrNull()
-            ?.takeIf { !it.getProperty("BAO_KEYSTORE").isNullOrBlank() }
+        (
+            runCatching {
+                Properties().apply { rootProject.file("local.properties").inputStream().use(::load) }
+            }.getOrNull() ?: Properties()
+        ).apply {
+            listOf("BAO_KEYSTORE", "BAO_KEYSTORE_PASSWORD", "BAO_KEY_ALIAS", "BAO_KEY_PASSWORD").forEach { key ->
+                System.getenv(key)?.takeIf { it.isNotBlank() }?.let { setProperty(key, it) }
+            }
+        }.takeIf { !it.getProperty("BAO_KEYSTORE").isNullOrBlank() }
     signingConfigs {
         if (baoSigning != null) {
             create("bao") {
@@ -120,9 +131,10 @@ android {
 
     buildTypes {
         release {
-            // Fork: own package so it installs beside the official app; signed with the shared bao
+            // Personal fork: own package (.rieng) so it installs beside the official app and beside
+            // the upstream Nhạc Nhẽo (.bao), and neither can update over it; signed with the shared bao
             // key above, or this machine's debug key when local.properties does not name one.
-            applicationIdSuffix = ".bao"
+            applicationIdSuffix = ".rieng"
             signingConfig = signingConfigs.findByName("bao") ?: signingConfigs.getByName("debug")
             // The unofficial-copy check would lock this personal build out: its package is not on
             // the official list and its key is not the release key.

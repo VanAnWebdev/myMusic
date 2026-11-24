@@ -40,6 +40,8 @@ android {
         vectorDrawables.useSupportLibrary = true
         // Fork updater off: it fetches bao- builds, which are not this package.
         buildConfigField("long", "BAO_COMMIT_TIME", "0L")
+        // Shares androidApp's sources (ForkUpdater reads this); vivo builds have no updater.
+        buildConfigField("String", "UPDATE_REPO", "\"\"")
         multiDexEnabled = true
 
         @Suppress("UnstableApiUsage")

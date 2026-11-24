@@ -17,24 +17,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Fork: updates the personal build from the download site, or its GitHub copy if the site cannot be
- * reached (`bao-YYYY.MM.DD.N`, published by `scripts/release-bao.sh`). Run from Settings → About → Check
- * for new build, never on its own: it looks for a release whose commit is newer than this build's ([BuildConfig.BAO_COMMIT_TIME]),
- * offers it, downloads the arm64 APK and hands it to the system installer, which asks for one tap.
- * Android installs it as an update only when it is signed with the same key as the installed app, so
- * a tampered download cannot replace it.
+ * Personal fork: updates from the GitHub Releases of the repo this build came from
+ * ([BuildConfig.UPDATE_REPO], filled by CI from GITHUB_REPOSITORY), never from upstream Nhạc Nhẽo.
+ * Releases are tagged `bao-YYYY.MM.DD.N` by .github/workflows/personal-release.yml, whose notes carry
+ * `commit-time: <unix seconds>`. A newer one is offered, never installed on its own; Android only
+ * accepts it when it is signed with the same key as the installed app.
  */
 object ForkUpdater {
     private const val TAG = "ForkUpdater"
-    // The download site (scripts/download-site) is asked first; the showcase repo keeps a copy of each release.
-    private const val SITE = "https://nhacnheo.pages.dev"
-    private const val API = "https://api.github.com/repos/baotrq/simpmusic-bao-showcase"
+    private val API get() = "https://api.github.com/repos/${BuildConfig.UPDATE_REPO}"
     private val COMMIT_TIME = Regex("""commit-time:\s*(\d+)""")
     private const val TAG_PREFIX = "bao-"
     private const val AUTO_CHECK_DELAY_MS = 10_000L
@@ -46,8 +42,9 @@ object ForkUpdater {
         val apkSize: Long,
     )
 
-    /** False in debug builds and in vivoAndroidApp, which have no bao- releases to compare against. */
-    val isAvailable: Boolean get() = !BuildConfig.DEBUG && BuildConfig.BAO_COMMIT_TIME != 0L
+    /** False in debug builds, in vivoAndroidApp, and in builds that do not name their own repo. */
+    val isAvailable: Boolean
+        get() = !BuildConfig.DEBUG && BuildConfig.BAO_COMMIT_TIME != 0L && BuildConfig.UPDATE_REPO.contains('/')
 
     private var found: Release? = null
     private var checkedAfterLaunch = false
@@ -94,25 +91,8 @@ object ForkUpdater {
         }
     }
 
-    /** The newest release, if its commit is newer than this build's. GitHub only answers when the site cannot. */
-    private fun newerRelease(): Release? =
-        runCatching { newerOnSite() }.getOrElse {
-            Logger.w(TAG, "Site check failed, trying GitHub: ${it.message}")
-            newerOnGitHub()
-        }
-
-    private fun newerOnSite(): Release? {
-        val manifest = JSONObject(fetchText("$SITE/latest.json"))
-        val android = manifest.getJSONObject("android")
-        if (android.getLong("commitTime") <= BuildConfig.BAO_COMMIT_TIME) return null
-        val apk = manifest.getJSONObject("files").getJSONObject("android")
-        return Release(
-            tag = android.getString("tag"),
-            title = android.getString("title"),
-            apkUrl = "$SITE/f/${apk.getString("key")}",
-            apkSize = apk.getLong("size"),
-        )
-    }
+    /** The newest release, if its commit is newer than this build's. */
+    private fun newerRelease(): Release? = newerOnGitHub()
 
     private fun newerOnGitHub(): Release? {
         val releases = JSONArray(fetchText("$API/releases?per_page=10"))

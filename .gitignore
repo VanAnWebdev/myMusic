@@ -50,3 +50,5 @@ sentry.properties
 
 # Fork: the release signing key. Never commit it.
 bao.keystore
+*.jks
+*.keystore

@@ -1,3 +1,19 @@
+# Nhạc Nhẽo — bản riêng
+
+Bản tách riêng, dùng cá nhân, của **Nhạc Nhẽo** (baotrq: [project-2b](https://github.com/baotrq/project-2b) + [core](https://github.com/baotrq/core)), vốn là fork của [SimpMusic](https://github.com/maxrave-dev/SimpMusic) (maxrave-dev và cộng sự). Giấy phép GPL-3.0.
+
+Khác bản gốc:
+- Tự cập nhật **chỉ từ Releases của chính repo này**, không hỏi `nhacnheo.pages.dev` hay GitHub của tác giả.
+- Tên gói `com.maxrave.simpmusic.rieng`, ký bằng khoá riêng: bản của tác giả không thể cài đè lên.
+- Tắt phần "sửa lời dùng chung" đi qua server của tác giả.
+- GitHub Actions tự build APK mỗi lần push lên `main`.
+
+👉 Hướng dẫn cài đặt, ký app, và server đồng bộ miễn phí: [HUONG-DAN.md](HUONG-DAN.md)
+
+---
+
+<sub>Phần dưới là README của bản Nhạc Nhẽo gốc, giữ nguyên để ghi công.</sub>
+
 <!-- Fork: download section for this fork. Everything below the line is the original README. -->
 # Nhạc Nhẽo — tải về / download
 

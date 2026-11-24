@@ -31,7 +31,9 @@ private const val TAG = "LyricsFixes"
  * other installs only after the owner approves it. Devices holding the admin key publish at once.
  */
 object LyricsFixes {
-    private const val BASE = "https://nhacnheo.pages.dev/lyrics"
+    // Personal fork: upstream's shared server (nhacnheo.pages.dev) is not used. Empty turns the
+    // feature off; point it at your own deployment of scripts/download-site to bring it back.
+    private const val BASE = ""
     private const val FETCH_TIMEOUT_MS = 2_500L
     private const val SEND_TIMEOUT_MS = 15_000L
 
@@ -80,7 +82,8 @@ object LyricsFixes {
         cache.remove(videoId)
     }
 
-    suspend fun enabled(dataStore: DataStoreManager): Boolean = dataStore.getString(KEY_ENABLED).first() != DataStoreManager.FALSE
+    suspend fun enabled(dataStore: DataStoreManager): Boolean =
+        BASE.isNotEmpty() && dataStore.getString(KEY_ENABLED).first() != DataStoreManager.FALSE
 
     private suspend fun adminKey(dataStore: DataStoreManager): String? = dataStore.getString(KEY_ADMIN).first()?.trim()?.takeIf { it.isNotEmpty() }
 
@@ -127,6 +130,7 @@ object LyricsFixes {
         duration: Int?,
     ): SendResult =
         withContext(Dispatchers.IO) {
+            if (BASE.isEmpty()) return@withContext SendResult.FAILED
             val admin = adminKey(dataStore)
             val body =
                 Suggestion(
@@ -183,6 +187,7 @@ object LyricsFixes {
         videoId: String,
     ): SendResult =
         withContext(Dispatchers.IO) {
+            if (BASE.isEmpty()) return@withContext SendResult.FAILED
             val admin = adminKey(dataStore) ?: return@withContext SendResult.FAILED
             val ok =
                 runCatching {
