@@ -1,0 +1,344 @@
+package com.maxrave.simpmusic
+
+import android.Manifest
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
+import android.content.res.Configuration
+import android.os.Build
+import android.os.Bundle
+import android.os.IBinder
+import android.os.SystemClock
+import androidx.lifecycle.lifecycleScope
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.core.net.toUri
+import androidx.core.os.LocaleListCompat
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.eygraber.uri.toKmpUriOrNull
+import com.maxrave.common.FIRST_TIME_MIGRATION
+import com.maxrave.common.SELECTED_LANGUAGE
+import com.maxrave.common.STATUS_DONE
+import com.maxrave.common.SUPPORTED_LANGUAGE
+import com.maxrave.common.SUPPORTED_LOCATION
+import com.maxrave.domain.data.model.intent.GenericIntent
+import com.maxrave.domain.manager.DataStoreManager
+import com.maxrave.domain.mediaservice.handler.MediaPlayerHandler
+import com.maxrave.domain.mediaservice.handler.ToastType
+import com.maxrave.domain.repository.LibrarySyncPhoneRepository
+import com.maxrave.logger.Logger
+import com.maxrave.media3.di.setServiceActivitySession
+import com.maxrave.simpmusic.di.viewModelModule
+import com.maxrave.simpmusic.expect.ui.rememberDesktopModeScale
+import com.maxrave.simpmusic.extension.applyPhoneOrientationLock
+import com.maxrave.simpmusic.service.test.notification.NotifyWork
+import com.maxrave.simpmusic.update.ForkUpdater
+import com.maxrave.simpmusic.utils.ComposeResUtils
+import com.maxrave.simpmusic.utils.ForkBuildCheck
+import com.maxrave.simpmusic.utils.VersionManager
+import com.maxrave.simpmusic.viewModel.SharedViewModel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import org.koin.android.ext.android.inject
+import org.koin.core.context.loadKoinModules
+import org.koin.core.context.unloadKoinModules
+import org.koin.dsl.module
+import org.simpmusic.crashlytics.pushPlayerError
+import pub.devrel.easypermissions.EasyPermissions
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+
+// Process-wide, so a recreated activity (rotation, theme change) does not count as opening the app.
+private var lastLibrarySyncAt = 0L
+
+@Suppress("DEPRECATION")
+class MainActivity : AppCompatActivity() {
+    val viewModel: SharedViewModel by inject()
+    val mediaPlayerHandler by inject<MediaPlayerHandler>()
+    val dataStoreManager: DataStoreManager by inject()
+    private val librarySync: LibrarySyncPhoneRepository by inject()
+
+    private var mBound = false
+    private var shouldUnbind = false
+    private val serviceConnection =
+        object : ServiceConnection {
+            override fun onServiceConnected(
+                name: ComponentName?,
+                service: IBinder?,
+            ) {
+//                mediaPlayerHandler.setActivitySession(this@MainActivity, MainActivity::class.java, service)
+                setServiceActivitySession(this@MainActivity, MainActivity::class.java, service)
+                Logger.w("MainActivity", "onServiceConnected: ")
+                mBound = true
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+                Logger.w("MainActivity", "onServiceDisconnected: ")
+                mBound = false
+            }
+        }
+
+    override fun onStart() {
+        super.onStart()
+        startMusicService()
+        // Every return to the screen asks; the pass itself runs at most once a day.
+        viewModel.runSmartDownloadsIfDue()
+        syncLibraryIfDue()
+    }
+
+    // ponytail: a fixed 5-minute gap between app-open rounds, since a computer that is off costs a
+    // LAN sweep each time; WorkManager covers the rest every 15 minutes, and "Sync now" ignores it.
+    private fun syncLibraryIfDue() {
+        val now = SystemClock.elapsedRealtime()
+        if (lastLibrarySyncAt != 0L && now - lastLibrarySyncAt < 5 * 60_000L) return
+        lastLibrarySyncAt = now
+        lifecycleScope.launch { librarySync.syncNow() }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (shouldUnbind) {
+            unbindService(serviceConnection)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Logger.d("MainActivity", "onNewIntent: $intent")
+        viewModel.setIntent(
+            GenericIntent(
+                action = intent.action,
+                data = (intent.data ?: intent.getStringExtra(Intent.EXTRA_TEXT)?.toUri())?.toKmpUriOrNull(),
+                type = intent.type,
+            ),
+        )
+    }
+
+    @ExperimentalFoundationApi
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        applyPhoneOrientationLock()
+        loadKoinModules(
+            module {
+                single<AppCompatActivity> { this@MainActivity }
+            },
+        )
+        // Recreate view model to fix the issue of view model not getting data from the service
+        unloadKoinModules(viewModelModule)
+        loadKoinModules(viewModelModule)
+        VersionManager.initialize()
+        // Fork: no check DURING startup; ForkUpdater waits, then shows anything newer as a card on Home.
+        if (ForkUpdater.isAvailable) {
+            ForkBuildCheck.check = { ForkUpdater.check(this) }
+            ForkBuildCheck.install = { ForkUpdater.installFound(this) }
+            ForkUpdater.checkAfterLaunch(this)
+        }
+        if (viewModel.recreateActivity.value || viewModel.isServiceRunning) {
+            viewModel.activityRecreateDone()
+        } else {
+            startMusicService()
+        }
+        Logger.d("MainActivity", "onCreate: ")
+        val data = (intent?.data ?: intent?.getStringExtra(Intent.EXTRA_TEXT)?.toUri())?.toKmpUriOrNull()
+        if (data != null) {
+            viewModel.setIntent(
+                GenericIntent(
+                    action = intent.action,
+                    data = data,
+                    type = intent.type,
+                ),
+            )
+        }
+        Logger.d("Italy", "Key: ${Locale.ITALY.toLanguageTag()}")
+
+        // Check if the migration has already been done or not
+        if (getString(FIRST_TIME_MIGRATION) != STATUS_DONE) {
+            Logger.d("Locale Key", "onCreate: ${Locale.getDefault().toLanguageTag()}")
+            if (SUPPORTED_LANGUAGE.codes.contains(Locale.getDefault().toLanguageTag())) {
+                Logger.d(
+                    "Contains",
+                    "onCreate: ${
+                        SUPPORTED_LANGUAGE.codes.contains(
+                            Locale.getDefault().toLanguageTag(),
+                        )
+                    }",
+                )
+                putString(SELECTED_LANGUAGE, Locale.getDefault().toLanguageTag())
+                if (SUPPORTED_LOCATION.items.contains(Locale.getDefault().country)) {
+                    putString("location", Locale.getDefault().country)
+                } else {
+                    putString("location", "US")
+                }
+            } else {
+                putString(SELECTED_LANGUAGE, "en-US")
+            }
+            // Fetch the selected language from wherever it was stored. In this case its SharedPref
+            getString(SELECTED_LANGUAGE)?.let {
+                Logger.d("Locale Key", "getString: $it")
+                // Set this locale using the AndroidX library that will handle the storage itself
+                val localeList = LocaleListCompat.forLanguageTags(it)
+                AppCompatDelegate.setApplicationLocales(localeList)
+                // Set the migration flag to ensure that this is executed only once
+                putString(FIRST_TIME_MIGRATION, STATUS_DONE)
+            }
+        }
+        if (AppCompatDelegate.getApplicationLocales().toLanguageTags() !=
+            getString(
+                SELECTED_LANGUAGE,
+            )
+        ) {
+            Logger.d(
+                "Locale Key",
+                "onCreate: ${AppCompatDelegate.getApplicationLocales().toLanguageTags()}",
+            )
+            putString(SELECTED_LANGUAGE, AppCompatDelegate.getApplicationLocales().toLanguageTags())
+        }
+
+        enableEdgeToEdge(
+            navigationBarStyle =
+                SystemBarStyle.dark(
+                    scrim = Color.Transparent.toArgb(),
+                ),
+            statusBarStyle =
+                SystemBarStyle.dark(
+                    scrim = Color.Transparent.toArgb(),
+                ),
+        )
+        viewModel.checkIsRestoring()
+        val request =
+            PeriodicWorkRequestBuilder<NotifyWork>(
+                12L,
+                TimeUnit.HOURS,
+            ).addTag("Worker Test")
+                .setConstraints(
+                    Constraints
+                        .Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build(),
+                ).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "Artist Worker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
+        // Fork: no blog notifications; drop the worker older installs scheduled.
+        WorkManager.getInstance(this).cancelUniqueWork("Blog RSS Worker")
+
+        if (!EasyPermissions.hasPermissions(this, Manifest.permission.POST_NOTIFICATIONS)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val doNotAsk = getString("notification_permission_do_not_ask")
+                if (doNotAsk != "true") {
+                    val wasAsked = getString("notification_permission_asked")
+                    if (wasAsked != "true") {
+                        // First time: request system permission
+                        EasyPermissions.requestPermissions(
+                            this,
+                            runBlocking { ComposeResUtils.getResString(ComposeResUtils.StringType.NOTIFICATION_REQUEST) },
+                            1,
+                            Manifest.permission.POST_NOTIFICATIONS,
+                        )
+                        putString("notification_permission_asked", "true")
+                    } else {
+                        // Already asked before: show custom dialog with "Don't show again"
+                        viewModel.showNotificationPermissionDialog()
+                    }
+                }
+            }
+        }
+
+        if (!BuildConfig.DEBUG && !BuildConfig.SKIP_OFFICIAL_BUILD_CHECK) viewModel.checkOfficialBuild(packageName, signingCertSha256())
+        setContent {
+            // Fork: in Samsung DeX everything is drawn a size up (see rememberDesktopModeScale).
+            val scale = rememberDesktopModeScale()
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale)) {
+                App(viewModel)
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        val shouldStopMusicService = viewModel.shouldStopMusicService()
+        Logger.w("MainActivity", "onDestroy: Should stop service $shouldStopMusicService")
+
+        // Always unbind service if it was bound to prevent MusicBinder leak
+        if (shouldStopMusicService && shouldUnbind && isFinishing) {
+            viewModel.isServiceRunning = false
+        }
+        unloadKoinModules(viewModelModule)
+        // The lambdas hold this activity; a recreated one has already put its own in.
+        if (isFinishing) {
+            ForkBuildCheck.check = null
+            ForkBuildCheck.install = null
+        }
+        super.onDestroy()
+        Logger.d("MainActivity", "onDestroy: ")
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        viewModel.activityRecreate()
+    }
+
+    private fun startMusicService() {
+//        mediaPlayerHandler.startMediaService(this, serviceConnection)
+        com.maxrave.media3.di
+            .startService(this@MainActivity, serviceConnection)
+        mediaPlayerHandler.pushPlayerError = { it ->
+            pushPlayerError(it)
+        }
+        mediaPlayerHandler.showToast = { type ->
+            when (type) {
+                is ToastType.ExplicitContent -> {
+                    viewModel.makeToast(
+                        runBlocking { ComposeResUtils.getResString(ComposeResUtils.StringType.EXPLICIT_CONTENT_BLOCKED) },
+                    )
+                }
+
+                is ToastType.PlayerError -> {
+                    // Shows the "proxy isn't working" dialog instead when the proxy from Settings is down.
+                    viewModel.onPlayerError(
+                        runBlocking { ComposeResUtils.getResString(ComposeResUtils.StringType.TIME_OUT_ERROR, type.error) },
+                    )
+                }
+
+                is ToastType.SponsorBlockSkip -> {
+                    viewModel.makeToast(
+                        runBlocking { ComposeResUtils.getResString(ComposeResUtils.StringType.SPONSOR_BLOCK_SKIP, type.category) },
+                    )
+                }
+            }
+        }
+        viewModel.isServiceRunning = true
+        shouldUnbind = true
+        Logger.d("Service", "Service started")
+    }
+
+    private fun putString(
+        key: String,
+        value: String,
+    ) {
+        viewModel.putString(key, value)
+    }
+
+    private fun getString(key: String): String? = viewModel.getString(key)
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyPhoneOrientationLock()
+        viewModel.activityRecreate()
+    }
+}

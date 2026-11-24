@@ -1,0 +1,13 @@
+name = "nhacnheo"
+compatibility_date = "2026-09-01"
+pages_build_output_dir = "./public"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "nhac-nheo-files"
+
+# Lyrics fixes (/lyrics/… in public/_worker.js). The admin key is a Pages secret, LYRICS_ADMIN_KEY.
+[[d1_databases]]
+binding = "LYRICS"
+database_name = "nhacnheo-lyrics"
+database_id = "63c8684d-e23c-464b-b8b0-55514657d318"

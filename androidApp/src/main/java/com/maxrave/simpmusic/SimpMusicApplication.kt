@@ -1,0 +1,199 @@
+package com.maxrave.simpmusic
+
+import android.annotation.SuppressLint
+import android.app.Application
+import android.database.CursorWindow
+import android.os.Build
+import android.provider.Settings
+import android.util.Log
+import androidx.work.Configuration
+import androidx.work.WorkManager
+import cat.ereza.customactivityoncrash.config.CaocConfig
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.annotation.ExperimentalCoilApi
+import coil3.compose.preferEndFirstIntrinsicSize
+import coil3.disk.DiskCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.CachePolicy
+import coil3.request.crossfade
+import com.maxrave.common.AppIdentity
+import com.maxrave.data.di.loader.loadAllModules
+import com.maxrave.domain.data.player.MeteredNetwork
+import com.maxrave.domain.manager.DataStoreManager
+import com.maxrave.domain.mediaservice.handler.MediaPlayerHandler
+import com.maxrave.domain.repository.LibrarySyncPhoneRepository
+import com.maxrave.logger.Logger
+import com.maxrave.simpmusic.carmode.CarMode
+import com.maxrave.simpmusic.carmode.CarModeDownloads
+import com.maxrave.simpmusic.di.viewModelModule
+import com.maxrave.simpmusic.expect.isOnUnmeteredNetwork
+import com.maxrave.simpmusic.led.LedStripSync
+import com.maxrave.simpmusic.playbacksync.PlaybackSync
+import com.maxrave.simpmusic.playbacksync.SettingsSync
+import com.maxrave.simpmusic.service.backup.AutoBackupScheduler
+import com.maxrave.simpmusic.service.sync.LibrarySyncScheduler
+import com.maxrave.simpmusic.utils.NetworkFirstInterceptor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import multiplatform.network.cmptoast.AppContext
+import okhttp3.OkHttpClient
+import okio.FileSystem
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
+import org.koin.core.component.inject
+import org.koin.core.context.loadKoinModules
+import org.koin.core.context.startKoin
+import org.koin.core.logger.Level
+import org.simpmusic.crashlytics.configCrashlytics
+import org.simpmusic.lastfm.configLastfm
+import java.io.File
+import java.lang.reflect.Field
+
+class SimpMusicApplication :
+    Application(),
+    KoinComponent,
+    SingletonImageLoader.Factory {
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val dataStoreManager: DataStoreManager by inject()
+    private lateinit var autoBackupScheduler: AutoBackupScheduler
+
+    override fun onCreate() {
+        super.onCreate()
+        // Before anything builds an HTTP client: release builds skip Debug lines, the per-request
+        // curl dumps and the per-chunk header logs. Info and above still reach the App log.
+        Logger.debugEnabled = BuildConfig.DEBUG
+        // First, so the rest of startup reaches the App log too (Settings → Developer option).
+        Logger.enableFileLogging(File(filesDir, "logs").path)
+        configCrashlytics(this, BuildKonfig.sentryDsn)
+        configLastfm(BuildKonfig.lastfmApiKey, BuildKonfig.lastfmSecret)
+        startKoin {
+            // DEBUG logs every definition Koin creates, which is a lot of work at startup.
+            androidLogger(level = if (BuildConfig.DEBUG) Level.DEBUG else Level.ERROR)
+            androidContext(this@SimpMusicApplication)
+            loadAllModules(
+                AppIdentity(
+                    applicationId = BuildConfig.APPLICATION_ID,
+                    versionName = BuildConfig.VERSION_NAME,
+                    platform = "Android ${Build.VERSION.RELEASE}",
+                    isDevBuild = BuildConfig.DEBUG,
+                ),
+            )
+            loadKoinModules(viewModelModule)
+        }
+        // provide custom configuration
+        val workConfig =
+            Configuration
+                .Builder()
+                .setMinimumLoggingLevel(Log.INFO)
+                .build()
+
+        // initialize WorkManager
+        WorkManager.initialize(this, workConfig)
+
+        MeteredNetwork.check = { !isOnUnmeteredNetwork() }
+
+        // Fork: Car mode's switch, mirrored for the image loader (cover TTL).
+        CarMode.start(dataStoreManager, applicationScope)
+        // Car mode's offline library: idle unless Car mode is on.
+        CarModeDownloads.start()
+
+        // Initialize and start AutoBackupScheduler
+        autoBackupScheduler = AutoBackupScheduler(this, dataStoreManager)
+        applicationScope.launch {
+            autoBackupScheduler.observeAndSchedule()
+        }
+
+        // Playback sync: on a fresh start, opens on another phone's newer song; then uploads what this
+        // phone plays. startKoin already created the player handler, but its launch restore is posted
+        // to SERVICE_SCOPE (Dispatchers.Main, not .immediate), so it reaches LaunchRestoreGate only
+        // after onCreate returns — by then this has set the gate. Keep it inside onCreate.
+        PlaybackSync.start(
+            Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)?.takeIf { it.isNotBlank() } ?: Build.MODEL,
+        )
+        // AI and translation settings, encrypted, through the same server.
+        SettingsSync.start()
+
+        // Car LED strip follows the artwork colour; idle unless enabled in Settings → LED strip.
+        LedStripSync.start(this, dataStoreManager, get<MediaPlayerHandler>())
+
+        // Library sync (#2663): LAN rounds with the paired computer.
+        val librarySyncScheduler = LibrarySyncScheduler(this, get<LibrarySyncPhoneRepository>())
+        applicationScope.launch {
+            librarySyncScheduler.observeAndSchedule()
+        }
+
+        CaocConfig.Builder
+            .create()
+            .backgroundMode(CaocConfig.BACKGROUND_MODE_SILENT) // default: CaocConfig.BACKGROUND_MODE_SHOW_CUSTOM
+            .enabled(true) // default: true
+            .showErrorDetails(true) // default: true
+            .showRestartButton(true) // default: true
+            .errorDrawable(R.mipmap.ic_launcher_round)
+            .logErrorOnRestart(false) // default: true
+            .trackActivities(true) // default: false
+            .minTimeBetweenCrashesMs(2000) // default: 3000 //default: bug image
+            .restartActivity(MainActivity::class.java) // default: null (your app's launch activity)
+            .apply()
+
+        @SuppressLint("DiscouragedPrivateApi")
+        val field: Field = CursorWindow::class.java.getDeclaredField("sCursorWindowSize")
+        field.isAccessible = true
+        val expectSize = 100 * 1024 * 1024
+        field.set(null, expectSize)
+
+        AppContext.apply {
+            set(applicationContext)
+        }
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+
+        Logger.w("Terminate", "Checking")
+    }
+
+    private fun carModeAtStart(): Boolean =
+        runCatching { runBlocking { dataStoreManager.carMode.first() } == DataStoreManager.TRUE }.getOrDefault(false)
+
+    @OptIn(ExperimentalCoilApi::class)
+    override fun newImageLoader(context: PlatformContext): ImageLoader {
+        lateinit var imageLoader: ImageLoader
+        imageLoader =
+            ImageLoader
+                .Builder(context)
+                .components {
+                    add(NetworkFirstInterceptor(currentTtlMillis = CarMode::imageTtlMillis) { imageLoader })
+                    add(
+                        OkHttpNetworkFetcherFactory(
+                            callFactory = {
+                                OkHttpClient()
+                            },
+                        ),
+                    )
+                }.diskCachePolicy(CachePolicy.ENABLED)
+                .networkCachePolicy(CachePolicy.ENABLED)
+                .diskCache(
+                    DiskCache
+                        .Builder()
+                        .directory(FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "image_cache")
+                        // Car mode keeps the covers of its offline songs here, so it gets room for
+                        // them. Read once: the loader is built on the first image the app shows.
+                        .maxSizeBytes(if (carModeAtStart()) 2048L * 1024 * 1024 else 512L * 1024 * 1024)
+                        .build(),
+                ).crossfade(true)
+                // CrossfadePainter otherwise sizes itself as max(placeholder, image) once and keeps it,
+                // so a square holder over a wide banner leaves the banner zoomed after the fade.
+                .preferEndFirstIntrinsicSize(true)
+                .build()
+        return imageLoader
+    }
+}
