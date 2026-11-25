@@ -12,6 +12,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -144,7 +145,9 @@ import com.maxrave.simpmusic.ui.screen.player.content.DESKTOP_PLAYER_PANEL
 import com.maxrave.simpmusic.ui.screen.player.content.DesktopCoverFlight
 import com.maxrave.simpmusic.ui.screen.player.content.DesktopPlayerMotion
 import com.maxrave.simpmusic.ui.screen.player.content.DesktopPlayerTab
-import com.maxrave.simpmusic.ui.shortcut.ShortcutSignals
+import com.maxrave.simpmusic.ui.component.DesktopArtworkBackdrop
+import com.maxrave.simpmusic.ui.component.DesktopGlass
+import com.maxrave.simpmusic.ui.component.DesktopTopBar
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -189,12 +192,6 @@ fun App(
 ) {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass
     val navController = rememberNavController()
-    // Personal fork: Ctrl+F on the desktop window opens Search.
-    LaunchedEffect(navController) {
-        ShortcutSignals.openSearch.collect {
-            navController.navigate(SearchDestination) { launchSingleTop = true }
-        }
-    }
     // Fork: an Android window wide enough for the Windows layout, which is a tablet held sideways. The
     // capsule needs the width: below this a portrait tablet keeps the rail and the in-window player.
     val isTabletShell =
@@ -742,6 +739,10 @@ fun App(
                             },
                         ),
                 ) {
+                    // Personal fork: the window behind the glass panels is the current artwork, blurred.
+                    if (isDesktopShell && !isInFullscreen) {
+                        DesktopArtworkBackdrop(viewModel)
+                    }
                     val tabletMiniPlayer: @Composable (Modifier) -> Unit = { modifier ->
                         androidx.compose.animation.AnimatedVisibility(
                             visible = isShowMiniPlayer && isTablet && !isInFullscreen,
@@ -824,8 +825,16 @@ fun App(
                             )
                         }
                     }
+                    Column(Modifier.fillMaxSize()) {
+                    // Personal fork: the desktop top bar (back, home, search, settings, account).
+                    if (isDesktopShell && !isInFullscreen) {
+                        DesktopTopBar(
+                            navController = navController,
+                            onNavigate = { isDesktopPlayerFull = false },
+                        )
+                    }
                     Row(
-                        Modifier.fillMaxSize(),
+                        Modifier.fillMaxWidth().weight(1f),
                     ) {
                         // Everything left of Now Playing. On Desktop the capsule player sits on the centre of
                         // this whole area, sidebar included, so it lives here rather than in the content panel,
@@ -869,7 +878,7 @@ fun App(
                                     if (isDesktopShell) {
                                         DesktopSidebar(
                                             navController = navController,
-                                            containerColor = desktopPanel,
+                                            containerColor = if (isLightScheme) desktopPanel else DesktopGlass.panel,
                                             showAnalyticsTab = showAnalyticsTab,
                                             showMixForYouTab = showMixForYouTab,
                                             // No end padding: the content panel's own 8dp is the gap between the two.
@@ -901,8 +910,9 @@ fun App(
                                             if (isDesktopShell) {
                                                 Modifier
                                                     .padding(8.dp)
-                                                    .clip(RoundedCornerShape(12.dp))
-                                                    .background(desktopPanel)
+                                                    .clip(RoundedCornerShape(20.dp))
+                                                    .background(if (isLightScheme) desktopPanel else DesktopGlass.panel)
+                                                    .border(1.dp, DesktopGlass.border, RoundedCornerShape(20.dp))
                                             } else {
                                                 Modifier
                                             },
@@ -1048,6 +1058,7 @@ fun App(
                                 }
                             }
                         }
+                    }
                     }
                 }
 

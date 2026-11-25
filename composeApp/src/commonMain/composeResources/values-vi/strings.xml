@@ -1205,4 +1205,5 @@
     <string name="add_lyrics_import">Nhập tệp .lrc</string>
     <string name="add_lyrics_import_failed">Không đọc được tệp này</string>
     <string name="lyrics_fix_removed">Đã gỡ bản sửa đã chia sẻ</string>
+    <string name="top_search_placeholder">Bạn muốn nghe gì?</string>
 </resources>

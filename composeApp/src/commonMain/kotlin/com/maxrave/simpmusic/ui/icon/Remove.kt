@@ -35,17 +35,17 @@ val SimpIcons.Remove: ImageVector
             strokeLineMiter = 1f,
             pathFillType = PathFillType.Companion.NonZero,
           ) {
-            moveTo(6f, 13f)
-            quadTo(5.58f, 13f, 5.29f, 12.71f)
-            quadTo(5f, 12.43f, 5f, 12f)
-            reflectiveQuadTo(5.29f, 11.29f)
-            reflectiveQuadTo(6f, 11f)
-            horizontalLineTo(18f)
-            quadToRelative(0.43f, 0f, 0.71f, 0.29f)
-            reflectiveQuadTo(19f, 12f)
-            reflectiveQuadToRelative(-0.29f, 0.71f)
-            reflectiveQuadTo(18f, 13f)
-            horizontalLineTo(6f)
+            moveTo(6.25f, 12.75f)
+            quadToRelative(-0.32f, 0f, -0.53f, -0.22f)
+            reflectiveQuadTo(5.5f, 12f)
+            reflectiveQuadTo(5.72f, 11.47f)
+            reflectiveQuadTo(6.25f, 11.25f)
+            horizontalLineToRelative(11.5f)
+            quadToRelative(0.32f, 0f, 0.53f, 0.22f)
+            reflectiveQuadTo(18.5f, 12f)
+            reflectiveQuadToRelative(-0.22f, 0.53f)
+            reflectiveQuadToRelative(-0.53f, 0.22f)
+            horizontalLineTo(6.25f)
             close()
           }
         }

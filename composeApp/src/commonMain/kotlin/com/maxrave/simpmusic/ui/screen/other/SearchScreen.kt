@@ -70,6 +70,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import com.maxrave.simpmusic.ui.shortcut.ShortcutSignals
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -320,6 +321,12 @@ fun SearchScreen(
             SearchType.PLAYLISTS -> searchViewModel.searchPlaylists(historyItem)
             SearchType.PODCASTS -> searchViewModel.searchPodcast(historyItem)
         }
+    }
+
+    // Personal fork: a query typed in the desktop top bar runs here, as a history tap does.
+    val pendingTopBarQuery by ShortcutSignals.pendingQuery.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingTopBarQuery) {
+        ShortcutSignals.consumeQuery()?.takeIf { it.isNotBlank() }?.let { runHistorySearch(it.trim()) }
     }
 
     // The landing's recent songs row is re-read whenever the landing comes back into view, so a

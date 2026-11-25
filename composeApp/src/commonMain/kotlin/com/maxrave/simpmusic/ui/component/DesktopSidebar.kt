@@ -10,6 +10,7 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.horizontalScroll
@@ -161,11 +162,10 @@ fun DesktopSidebar(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     // See the note in AppBottomNavigationBar: `ordinal` is the tab's identity, not its position.
     val navScreens =
+        // Personal fork: Home and Search live in the top bar (DesktopTopBar).
         listOfNotNull(
-            BottomNavScreen.Home,
             BottomNavScreen.MixForYou.takeIf { showMixForYouTab },
             BottomNavScreen.Analytics.takeIf { showAnalyticsTab },
-            BottomNavScreen.Search,
         )
     var selectedIndex by rememberSaveable { mutableIntStateOf(BottomNavScreen.Home.ordinal) }
     // A tab can disappear under the user (tracking turned off, YouTube session ended); fall back to
@@ -262,8 +262,9 @@ fun DesktopSidebar(
                 layout(roomWidth.roundToPx(), placeable.height) { placeable.placeRelative(0, 0) }
             }.width(width)
             .fillMaxHeight()
-            .clip(RoundedCornerShape(12.dp))
-            .background(containerColor),
+            .clip(RoundedCornerShape(20.dp))
+            .background(containerColor)
+            .border(1.dp, DesktopGlass.border, RoundedCornerShape(20.dp)),
     ) {
         // Off, the controls draw flat and nothing reads the recording.
         if (LocalLiquidGlassEnabled.current) Box(Modifier.matchParentSize().layerBackdrop(backdrop))
@@ -348,10 +349,12 @@ fun DesktopSidebar(
                         icon = screen.icon,
                     )
                 }
-                HorizontalDivider(
-                    Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                )
+                if (navScreens.isNotEmpty()) {
+                    HorizontalDivider(
+                        Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    )
+                }
                 LibraryHeader(
                     backdrop = backdrop,
                     selected = selectedIndex == BottomNavScreen.Library.ordinal,

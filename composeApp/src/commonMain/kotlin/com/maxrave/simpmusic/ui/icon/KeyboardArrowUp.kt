@@ -35,25 +35,25 @@ val SimpIcons.KeyboardArrowUp: ImageVector
             strokeLineMiter = 1f,
             pathFillType = PathFillType.Companion.NonZero,
           ) {
-            moveTo(12f, 10.8f)
-            lineTo(8.1f, 14.7f)
-            quadTo(7.83f, 14.98f, 7.4f, 14.98f)
-            reflectiveQuadTo(6.7f, 14.7f)
-            reflectiveQuadTo(6.43f, 14f)
-            reflectiveQuadTo(6.7f, 13.3f)
-            lineTo(11.3f, 8.7f)
-            quadTo(11.6f, 8.4f, 12f, 8.4f)
-            reflectiveQuadToRelative(0.7f, 0.3f)
-            lineToRelative(4.6f, 4.6f)
-            quadToRelative(0.27f, 0.28f, 0.27f, 0.7f)
-            reflectiveQuadTo(17.3f, 14.7f)
-            reflectiveQuadToRelative(-0.7f, 0.28f)
-            reflectiveQuadTo(15.9f, 14.7f)
-            lineTo(12f, 10.8f)
+            moveTo(12f, 10.45f)
+            lineTo(7.93f, 14.53f)
+            quadTo(7.72f, 14.73f, 7.4f, 14.74f)
+            reflectiveQuadTo(6.87f, 14.53f)
+            reflectiveQuadTo(6.66f, 14f)
+            reflectiveQuadTo(6.87f, 13.47f)
+            lineTo(11.37f, 8.98f)
+            quadTo(11.64f, 8.71f, 12f, 8.71f)
+            reflectiveQuadToRelative(0.63f, 0.27f)
+            lineToRelative(4.49f, 4.49f)
+            quadToRelative(0.21f, 0.21f, 0.21f, 0.52f)
+            reflectiveQuadToRelative(-0.21f, 0.53f)
+            reflectiveQuadTo(16.6f, 14.74f)
+            reflectiveQuadTo(16.07f, 14.53f)
+            lineTo(12f, 10.45f)
             close()
           }
         }
-        .build()
+        .buildSimpIcon()
     return _KeyboardArrowUp!!
   }
 
