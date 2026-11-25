@@ -65,7 +65,7 @@ jobs:
         run: |
           echo "$BAO_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           export BAO_KEYSTORE="$RUNNER_TEMP/release.jks"
-          ./gradlew --no-daemon :androidApp:assembleRelease
+          ./gradlew --no-daemon -Dorg.gradle.jvmargs="-Xmx6g -XX:+UseParallelGC" :androidApp:assembleRelease
           rm -f "$RUNNER_TEMP/release.jks"
 
       - name: Publish GitHub Release
@@ -122,7 +122,7 @@ jobs:
           export MSI_BUILD=$((1000 + MSI_BUILD))
           ./gradlew --no-daemon exportLibraryDefinitions
           ./gradlew --no-daemon :composeApp:mpvSetupAll -PmpvSlices=windows-x64 --no-configuration-cache
-          ./gradlew --no-daemon :desktopApp:packageWindowsMsi --no-configuration-cache
+          ./gradlew --no-daemon -Dorg.gradle.jvmargs="-Xmx6g -XX:+UseParallelGC" :desktopApp:packageWindowsMsi --no-configuration-cache
 
       - name: Attach to the release
         env:
