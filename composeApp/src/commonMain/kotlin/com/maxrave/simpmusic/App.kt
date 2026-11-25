@@ -148,6 +148,7 @@ import com.maxrave.simpmusic.ui.screen.player.content.DesktopPlayerTab
 import com.maxrave.simpmusic.ui.component.DesktopArtworkBackdrop
 import com.maxrave.simpmusic.ui.component.DesktopGlass
 import com.maxrave.simpmusic.ui.component.DesktopTopBar
+import com.maxrave.simpmusic.ui.component.glassSurface
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -910,9 +911,13 @@ fun App(
                                             if (isDesktopShell) {
                                                 Modifier
                                                     .padding(8.dp)
-                                                    .clip(RoundedCornerShape(20.dp))
-                                                    .background(if (isLightScheme) desktopPanel else DesktopGlass.panel)
-                                                    .border(1.dp, DesktopGlass.border, RoundedCornerShape(20.dp))
+                                                    .then(
+                                                        if (isLightScheme) {
+                                                            Modifier.clip(RoundedCornerShape(20.dp)).background(desktopPanel)
+                                                        } else {
+                                                            Modifier.glassSurface(RoundedCornerShape(20.dp))
+                                                        },
+                                                    )
                                             } else {
                                                 Modifier
                                             },

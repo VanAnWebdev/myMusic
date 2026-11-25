@@ -47,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
@@ -58,6 +59,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -89,7 +91,38 @@ object DesktopGlass {
     val fillActive = Color.White.copy(alpha = 0.18f)
     val border = Color.White.copy(alpha = 0.12f)
     val panel = Color(0xFF1C1E26).copy(alpha = 0.42f)
+
+    /** The rim: light catches the top-left edge, fades along the sides, picks up again bottom-right. */
+    val rim =
+        Brush.linearGradient(
+            0f to Color.White.copy(alpha = 0.34f),
+            0.35f to Color.White.copy(alpha = 0.07f),
+            0.7f to Color.White.copy(alpha = 0.05f),
+            1f to Color.White.copy(alpha = 0.18f),
+            start = Offset.Zero,
+            end = Offset.Infinite,
+        )
+
+    /** A soft sheen across the top of the pane, as on frosted glass lit from above. */
+    val sheen =
+        Brush.verticalGradient(
+            0f to Color.White.copy(alpha = 0.09f),
+            0.4f to Color.White.copy(alpha = 0.015f),
+            1f to Color.Transparent,
+        )
 }
+
+/** Personal fork: a frosted-glass pane — translucent fill, top sheen and a lit rim. */
+fun Modifier.glassSurface(
+    shape: Shape,
+    fill: Color = DesktopGlass.panel,
+    rimWidth: Dp = 1.dp,
+): Modifier =
+    this
+        .clip(shape)
+        .background(fill)
+        .background(DesktopGlass.sheen)
+        .border(rimWidth, DesktopGlass.rim, shape)
 
 /**
  * Personal fork: the desktop window's top bar — back, home, a search field in the middle (type and
@@ -202,9 +235,8 @@ private fun SearchPill(
         Modifier
             .widthIn(min = 320.dp, max = 520.dp)
             .height(44.dp)
-            .clip(shape)
-            .background(if (focused) DesktopGlass.fillActive else if (hovered) DesktopGlass.fillHover else DesktopGlass.fill)
-            .border(1.dp, if (focused) Color.White.copy(alpha = 0.35f) else DesktopGlass.border, shape)
+            .glassSurface(shape, if (focused) DesktopGlass.fillActive else if (hovered) DesktopGlass.fillHover else DesktopGlass.fill)
+            .then(if (focused) Modifier.border(1.dp, Color.White.copy(alpha = 0.4f), shape) else Modifier)
             .hoverable(interaction)
             .clickable(interactionSource = interaction, indication = null) { runCatching { focusRequester.requestFocus() } }
             .padding(horizontal = 14.dp),
@@ -274,9 +306,7 @@ private fun GlassCircleButton(
     Box(
         Modifier
             .size(size.dp)
-            .clip(CircleShape)
-            .background(if (hovered && enabled) DesktopGlass.fillHover else DesktopGlass.fill)
-            .border(1.dp, DesktopGlass.border, CircleShape)
+            .glassSurface(CircleShape, if (hovered && enabled) DesktopGlass.fillHover else DesktopGlass.fill)
             .hoverable(interaction)
             .clickable(enabled = enabled, interactionSource = interaction, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center,

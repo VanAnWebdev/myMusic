@@ -224,6 +224,16 @@ fun runDesktopApp(args: Array<String> = emptyArray()) {
         }
     changeLanguageNative(language)
 
+    // Personal fork: the glass look is the design here, so liquid glass starts on, once. A user who
+    // later turns it off in Settings keeps it off (the marker is never cleared).
+    runBlocking {
+        val store = getKoin().get<DataStoreManager>()
+        if (store.getString("fork_glass_default_applied").first() == null) {
+            store.setEnableLiquidGlass(true)
+            store.putString("fork_glass_default_applied", "1")
+        }
+    }
+
     VersionManager.initialize()
     // Fork: Mac and Windows look for this fork's own releases; Linux and dev runs keep the upstream check.
     DesktopForkUpdater.start(BuildKonfig.versionName, isDevBuild = System.getProperty("simpmusic.dev") == "true")

@@ -278,9 +278,7 @@ fun DesktopSidebar(
                 layout(roomWidth.roundToPx(), placeable.height) { placeable.placeRelative(0, 0) }
             }.width(width)
             .fillMaxHeight()
-            .clip(RoundedCornerShape(20.dp))
-            .background(containerColor)
-            .border(1.dp, DesktopGlass.border, RoundedCornerShape(20.dp)),
+            .glassSurface(RoundedCornerShape(20.dp), containerColor),
     ) {
         // Off, the controls draw flat and nothing reads the recording.
         if (LocalLiquidGlassEnabled.current) Box(Modifier.matchParentSize().layerBackdrop(backdrop))
