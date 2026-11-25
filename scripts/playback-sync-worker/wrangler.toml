@@ -5,5 +5,6 @@ compatibility_date = "2026-09-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "simpmusic-sync"
-# Paste the id printed by `npx wrangler d1 create simpmusic-sync`.
-database_id = "f46ba93c-4e81-428b-8406-92708cdbf57e"
+# Filled in by .github/workflows/sync-server.yml at deploy time (it creates the database if needed).
+# Deploying by hand: paste the id printed by `npx wrangler d1 create simpmusic-sync`.
+database_id = "00000000-0000-0000-0000-000000000000"

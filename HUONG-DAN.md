@@ -27,26 +27,15 @@ Mỗi lần có commit mới trên `main`, GitHub build bản mới; app sẽ hi
 
 ## 3. Server đồng bộ miễn phí (không bắt buộc)
 
-Dùng khi muốn nghe dở máy này, mở máy kia nghe tiếp, và đăng nhập YouTube một lần cho mọi máy. Chạy trên **Cloudflare Workers gói free, không cần thẻ**.
+Dùng khi muốn nghe dở máy này, mở máy kia nghe tiếp, và đăng nhập YouTube một lần cho mọi máy. Chạy trên **Cloudflare Workers gói free, không cần thẻ**. GitHub Actions dựng giúp, không cần cài gì trên máy.
 
-Cần máy tính có Node.js. Trong thư mục `scripts/playback-sync-worker`:
-
-```bash
-npx wrangler login
-npx wrangler d1 create simpmusic-sync
-```
-
-Chép `database_id` vừa in ra vào `wrangler.toml` (thay id cũ của tác giả), rồi:
-
-```bash
-openssl rand -hex 24
-npx wrangler secret put SYNC_KEY
-npx wrangler deploy
-```
-
-(`openssl` in ra khoá đồng bộ, dán khoá đó khi lệnh `secret put` hỏi.)
-
-Trên mỗi điện thoại: **Cài đặt → Playback sync**, nhập địa chỉ `https://….workers.dev` và khoá đồng bộ, bấm **Test connection**.
+1. Tạo tài khoản ở https://dash.cloudflare.com (miễn phí), mở mục **Workers & Pages** một lần (nếu được hỏi tên miền phụ `workers.dev` thì đặt một tên bất kỳ).
+2. Tạo API token: https://dash.cloudflare.com/profile/api-tokens → **Create Token** → mẫu **Edit Cloudflare Workers** → **Use template** → ở *Permissions* bấm **+ Add more**, chọn *Account* · **D1** · **Edit** → *Account Resources*: tài khoản của mình → **Continue to summary** → **Create Token**, copy token.
+3. Repo → Settings → Secrets and variables → Actions, thêm:
+   - `CLOUDFLARE_API_TOKEN`: token vừa copy
+   - `SYNC_KEY`: khoá đồng bộ (một chuỗi ngẫu nhiên dài, giữ bí mật)
+4. Tab **Actions → Deploy sync server → Run workflow**. Chạy xong (1–2 phút), mở lần chạy đó, phần *Summary* ghi địa chỉ `https://simpmusic-sync.….workers.dev`.
+5. Trên mỗi điện thoại / máy tính: **Cài đặt → Playback sync**, nhập địa chỉ đó và `SYNC_KEY`, bấm **Test connection**.
 
 ## 4. Lấy bản sửa mới từ tác giả (khi cần)
 

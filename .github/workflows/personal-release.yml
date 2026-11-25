@@ -17,6 +17,7 @@ on:
     paths-ignore:
       - '**.md'
       - 'scripts/**'
+      - '.github/workflows/sync-server.yml'
       - '.github/ISSUE_TEMPLATE/**'
 
 permissions:

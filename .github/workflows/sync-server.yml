@@ -1,0 +1,82 @@
+# Deploys the playback sync server (scripts/playback-sync-worker) to Cloudflare Workers, free plan.
+# Run it from the Actions tab ("Deploy sync server" → Run workflow). Safe to run again: it reuses
+# the database and only updates the code and the key.
+#
+# Needs repository secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   token with Workers Scripts: Edit, D1: Edit, Account Settings: Read
+#   SYNC_KEY               the sync key the phones and PCs type in (any long random string)
+#   CLOUDFLARE_ACCOUNT_ID  optional; only needed if the token can see more than one account
+name: Deploy sync server
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: scripts/playback-sync-worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SYNC_KEY: ${{ secrets.SYNC_KEY }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check secrets
+        run: |
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "::error::Add the CLOUDFLARE_API_TOKEN secret."; exit 1; }
+          [ -n "$SYNC_KEY" ] || { echo "::error::Add the SYNC_KEY secret."; exit 1; }
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || unset CLOUDFLARE_ACCOUNT_ID
+
+      - name: Install wrangler
+        run: npm install --no-save --no-audit --no-fund wrangler@4
+
+      - name: Create or find the database
+        run: |
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || unset CLOUDFLARE_ACCOUNT_ID
+          find_id() {
+            npx wrangler d1 list --json | node -e '
+              let s = require("fs").readFileSync(0, "utf8"); s = s.slice(s.indexOf("["));
+              const db = JSON.parse(s).find(d => d.name === "simpmusic-sync");
+              if (db) console.log(db.uuid);'
+          }
+          id=$(find_id)
+          if [ -z "$id" ]; then
+            npx wrangler d1 create simpmusic-sync
+            id=$(find_id)
+          fi
+          [ -n "$id" ] || { echo "::error::Could not create or find the D1 database."; exit 1; }
+          sed -i "s/^database_id = .*/database_id = \"$id\"/" wrangler.toml
+          echo "Database: $id"
+
+      - name: Deploy
+        run: |
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || unset CLOUDFLARE_ACCOUNT_ID
+          npx wrangler deploy | tee deploy.log
+          printf '%s' "$SYNC_KEY" | npx wrangler secret put SYNC_KEY
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          [ -n "$url" ] || { echo "::error::No workers.dev address in the deploy output. Open Workers & Pages in the Cloudflare dashboard once to pick a workers.dev subdomain, then run this again."; exit 1; }
+          echo "URL=$url" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: |
+          # The secret can take a few seconds to reach the edge.
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SYNC_KEY" "$URL/playback")
+            [ "$code" = 404 ] || [ "$code" = 200 ] && break
+            sleep 5
+          done
+          echo "HTTP $code"
+          { echo "## Sync server is up"; echo; echo "Sync server: \`$URL\`"; echo; echo "Test answered HTTP $code (200 or 404 means the key works)."; } >> "$GITHUB_STEP_SUMMARY"
+          [ "$code" = 404 ] || [ "$code" = 200 ] || { echo "::error::The server answered $code instead of 200/404."; exit 1; }
