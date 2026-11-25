@@ -92,6 +92,8 @@ import com.maxrave.simpmusic.ui.icon.LeftPanelClose
 import com.maxrave.simpmusic.ui.icon.LeftPanelOpen
 import com.maxrave.simpmusic.ui.icon.LibraryMusic
 import com.maxrave.simpmusic.ui.icon.PushPin
+import com.maxrave.simpmusic.ui.icon.Download
+import com.maxrave.simpmusic.ui.icon.Favorite
 import com.maxrave.simpmusic.ui.icon.Search
 import com.maxrave.simpmusic.ui.icon.SimpIcons
 import com.maxrave.simpmusic.ui.icon.TrendingUp
@@ -119,8 +121,6 @@ import simpmusic.composeapp.generated.resources.albums
 import simpmusic.composeapp.generated.resources.alphabetical
 import simpmusic.composeapp.generated.resources.artist
 import simpmusic.composeapp.generated.resources.artists
-import simpmusic.composeapp.generated.resources.baseline_downloaded
-import simpmusic.composeapp.generated.resources.baseline_favorite_24
 import simpmusic.composeapp.generated.resources.collapse_your_library
 import simpmusic.composeapp.generated.resources.downloaded
 import simpmusic.composeapp.generated.resources.expand_your_library
@@ -225,14 +225,30 @@ fun DesktopSidebar(
         }
     val pinned =
         listOf(
-            PinnedCollection(Res.string.favorite, LibraryDynamicPlaylistType.Favorite, overview?.favorite) {
-                Image(painterResource(Res.drawable.baseline_favorite_24), contentDescription = null, modifier = Modifier.size(24.dp))
+            // Personal fork: gradient tiles with white Lucide glyphs, in place of upstream's drawables.
+            PinnedCollection(
+                Res.string.favorite,
+                LibraryDynamicPlaylistType.Favorite,
+                overview?.favorite,
+                listOf(Color(0xFF5B3FD6), Color(0xFFB5A8F5)),
+            ) {
+                Icon(SimpIcons.Favorite, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
             },
-            PinnedCollection(Res.string.downloaded, LibraryDynamicPlaylistType.Downloaded, overview?.downloaded) {
-                Image(painterResource(Res.drawable.baseline_downloaded), contentDescription = null, modifier = Modifier.size(24.dp))
+            PinnedCollection(
+                Res.string.downloaded,
+                LibraryDynamicPlaylistType.Downloaded,
+                overview?.downloaded,
+                listOf(Color(0xFF0E7C66), Color(0xFF5FD3B0)),
+            ) {
+                Icon(SimpIcons.Download, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
             },
-            PinnedCollection(Res.string.most_played, LibraryDynamicPlaylistType.MostPlayed, overview?.mostPlayed) {
-                Icon(SimpIcons.TrendingUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            PinnedCollection(
+                Res.string.most_played,
+                LibraryDynamicPlaylistType.MostPlayed,
+                overview?.mostPlayed,
+                listOf(Color(0xFFD9483B), Color(0xFFF7A84A)),
+            ) {
+                Icon(SimpIcons.TrendingUp, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
             },
         ).filter { filter == null || filter == LibrarySidebarKind.PLAYLIST }
     val pinnedTitles = pinned.map { stringResource(it.title) }
@@ -294,8 +310,8 @@ fun DesktopSidebar(
                             Box(
                                 Modifier
                                     .size(48.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Brush.linearGradient(collection.gradient)),
                                 contentAlignment = Alignment.Center,
                             ) { collection.icon() }
                         }
@@ -394,6 +410,7 @@ private class PinnedCollection(
     val title: StringResource,
     val type: LibraryDynamicPlaylistType,
     val preview: LibraryCollectionPreview?,
+    val gradient: List<Color>,
     val icon: @Composable () -> Unit,
 )
 
