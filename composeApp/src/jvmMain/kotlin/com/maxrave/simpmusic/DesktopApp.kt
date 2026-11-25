@@ -41,7 +41,7 @@ import com.maxrave.simpmusic.expect.ui.LibrarySyncLoginPrompt
 import com.maxrave.simpmusic.extension.DesktopWindowChrome
 import com.maxrave.simpmusic.ui.component.CustomTitleBar
 import com.maxrave.simpmusic.ui.mini_player.MiniPlayerManager
-import com.maxrave.simpmusic.ui.mini_player.MiniPlayerWindow
+import com.maxrave.simpmusic.ui.mini_player.DynamicIslandWindow
 import com.maxrave.simpmusic.ui.shortcut.DesktopShortcuts
 import com.maxrave.simpmusic.update.DesktopForkUpdater
 import com.maxrave.simpmusic.ui.theme.isDarkTheme
@@ -543,8 +543,10 @@ fun runDesktopApp(args: Array<String> = emptyArray()) {
 
         // Mini Player Window (separate window)
         if (MiniPlayerManager.isOpen) {
-            MiniPlayerWindow(
+            // Personal fork: the mini player is a Dynamic Island at the top of the screen.
+            DynamicIslandWindow(
                 sharedViewModel = sharedViewModel,
+                onOpenApp = { DesktopRestoreSignal.request() },
                 onCloseRequest = {
                     MiniPlayerManager.isOpen = false
                 },

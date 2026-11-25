@@ -86,11 +86,11 @@ import simpmusic.composeapp.generated.resources.top_search_placeholder
 
 /** Personal fork: glass tones shared by the desktop chrome (top bar, panels). */
 object DesktopGlass {
-    val fill = Color.White.copy(alpha = 0.08f)
+    val fill = Color.White.copy(alpha = 0.06f)
     val fillHover = Color.White.copy(alpha = 0.14f)
     val fillActive = Color.White.copy(alpha = 0.18f)
     val border = Color.White.copy(alpha = 0.12f)
-    val panel = Color(0xFF1C1E26).copy(alpha = 0.42f)
+    val panel = Color(0xFF1C1E26).copy(alpha = 0.26f)
 
     /** The rim: light catches the top-left edge, fades along the sides, picks up again bottom-right. */
     val rim =
