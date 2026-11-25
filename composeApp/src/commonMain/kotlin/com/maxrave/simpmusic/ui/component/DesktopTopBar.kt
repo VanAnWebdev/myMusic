@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import com.maxrave.simpmusic.viewModel.SharedViewModel
@@ -85,8 +87,8 @@ object DesktopGlass {
     val fill = Color.White.copy(alpha = 0.08f)
     val fillHover = Color.White.copy(alpha = 0.14f)
     val fillActive = Color.White.copy(alpha = 0.18f)
-    val border = Color.White.copy(alpha = 0.10f)
-    val panel = Color(0xFF101014).copy(alpha = 0.55f)
+    val border = Color.White.copy(alpha = 0.12f)
+    val panel = Color(0xFF1C1E26).copy(alpha = 0.42f)
 }
 
 /**
@@ -297,7 +299,27 @@ private fun GlassCircleButton(
 fun DesktopArtworkBackdrop(viewModel: SharedViewModel) {
     val data by viewModel.nowPlayingScreenData.collectAsState()
     val url = data.thumbnailURL
-    Box(Modifier.fillMaxSize().background(Color(0xFF07070A))) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color(0xFF07070A))
+            // Ambient colour for when nothing plays: soft blobs, like light through frosted glass.
+            .drawBehind {
+                fun blob(
+                    color: Color,
+                    cx: Float,
+                    cy: Float,
+                    r: Float,
+                ) = drawCircle(
+                    Brush.radialGradient(listOf(color, Color.Transparent), center = Offset(size.width * cx, size.height * cy), radius = size.minDimension * r),
+                    radius = size.minDimension * r,
+                    center = Offset(size.width * cx, size.height * cy),
+                )
+                blob(Color(0xFF4A5FA0).copy(alpha = 0.70f), 0.18f, 0.22f, 0.75f)
+                blob(Color(0xFF8A4A8C).copy(alpha = 0.60f), 0.82f, 0.30f, 0.70f)
+                blob(Color(0xFF2F8A80).copy(alpha = 0.55f), 0.55f, 0.95f, 0.80f)
+            },
+    ) {
         Crossfade(targetState = url, animationSpec = tween(900), label = "desktopBackdrop") { model ->
             if (!model.isNullOrBlank()) {
                 AsyncImage(
@@ -314,7 +336,7 @@ fun DesktopArtworkBackdrop(viewModel: SharedViewModel) {
                 )
             }
         }
-        Box(
+        if (!url.isNullOrBlank()) Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(
                     listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.62f), Color.Black.copy(alpha = 0.78f)),

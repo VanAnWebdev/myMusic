@@ -1164,8 +1164,13 @@ fun HomeTopAppBar(
                 TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Start),
             ),
         navigationIcon = {
-            Box(Modifier.padding(start = 16.dp, end = 4.dp)) {
-                HomeAccountButton(accountName = accountName, thumbnailUrl = accountThumbnail, navController = navController)
+            // Personal fork: on Desktop the account sits in the window's top bar.
+            if (getPlatform() != Platform.Desktop) {
+                Box(Modifier.padding(start = 16.dp, end = 4.dp)) {
+                    HomeAccountButton(accountName = accountName, thumbnailUrl = accountThumbnail, navController = navController)
+                }
+            } else {
+                Spacer(Modifier.width(16.dp))
             }
         },
         title = {
@@ -1193,8 +1198,11 @@ fun HomeTopAppBar(
         },
         actions = {
             // Fork: Settings only. Notifications, Recently played and Listen Together moved to Library.
-            RippleIconButton(imageVector = SimpIcons.Settings, tint = MaterialTheme.colorScheme.onBackground) {
-                navController.navigate(SettingsDestination)
+            // Personal fork: on Desktop Settings sits in the window's top bar.
+            if (getPlatform() != Platform.Desktop) {
+                RippleIconButton(imageVector = SimpIcons.Settings, tint = MaterialTheme.colorScheme.onBackground) {
+                    navController.navigate(SettingsDestination)
+                }
             }
         },
         colors =
