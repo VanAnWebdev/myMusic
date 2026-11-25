@@ -167,7 +167,11 @@ val windowsMsiVersion =
         .split('.')
         // MSI takes MAJOR.MINOR.BUILD only and compares nothing past it. The fork's rebuild number goes
         // into BUILD, so 2.5.0.7 is 2.5.7 and 2.5.1.0 is 2.5.100: each rebuild installs over the last.
-        .let { (major, minor, patch, rebuild) -> "$major.$minor.${patch.toInt() * 100 + rebuild.toInt()}" }
+        .let { (major, minor, patch, rebuild) ->
+            // Personal fork: CI sets MSI_BUILD (from the run number) so every build installs over the last.
+            val build = System.getenv("MSI_BUILD")?.toIntOrNull() ?: (patch.toInt() * 100 + rebuild.toInt())
+            "$major.$minor.$build"
+        }
 compose.desktop {
     application {
         mainClass = "com.maxrave.simpmusic.MainKt"
@@ -657,7 +661,8 @@ tasks.register<Exec>("packageWindowsMsi") {
             // link WiX's UI library, which that UI is built from.
             "--win-dir-chooser",
             // Must never change, or a new version installs beside the old one instead of over it.
-            "--win-upgrade-uuid", "6f3b1c52-8a47-4e0d-9c21-7d5e2a94b1f6",
+            // Personal fork: its own id, so it never replaces (or is replaced by) upstream's installer.
+            "--win-upgrade-uuid", "c4e2a7d1-3b9f-4f61-8e05-6a1d92b7f3c8",
         )
     }
 }
