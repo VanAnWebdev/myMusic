@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -30,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,7 +46,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -61,6 +67,7 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.maxrave.simpmusic.ui.component.DesktopGlass
 import com.maxrave.simpmusic.ui.icon.Close
 import com.maxrave.simpmusic.ui.icon.Favorite
 import com.maxrave.simpmusic.ui.icon.FavoriteBorder
@@ -172,13 +179,32 @@ fun DynamicIslandWindow(
                     .padding(top = WindowMargin)
                     .size(islandWidth, islandHeight)
                     .clip(RoundedCornerShape(corner))
-                    .background(Color.Black)
-                    .border(
-                        1.dp,
-                        Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.04f))),
-                        RoundedCornerShape(corner),
-                    ).hoverable(hover),
+                    .background(Color(0xFF07070A))
+                    .hoverable(hover),
             ) {
+                // Glass, as in the app: the playing cover blurred behind a dark tint, a sheen on top
+                // and a lit rim (DesktopGlass), so the island reads as the same material.
+                if (!nowPlaying.thumbnailURL.isNullOrBlank()) {
+                    AsyncImage(
+                        model = nowPlaying.thumbnailURL,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .graphicsLayer {
+                                    scaleX = 1.4f
+                                    scaleY = 1.4f
+                                }.blur(28.dp, BlurredEdgeTreatment.Rectangle),
+                    )
+                }
+                Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.52f)))
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(DesktopGlass.sheen)
+                        .border(1.dp, DesktopGlass.rim, RoundedCornerShape(corner)),
+                )
                 // Compact row
                 AnimatedVisibility(!expanded, enter = fadeIn(tween(220, delayMillis = 120)), exit = fadeOut(tween(90))) {
                     Row(
@@ -311,17 +337,54 @@ private fun SeekBar(
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(formatTime(current), color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
         Spacer(Modifier.width(8.dp))
+        val hoverSource = remember { MutableInteractionSource() }
+        val barHovered by hoverSource.collectIsHoveredAsState()
+        // While dragging, the thumb follows the pointer and the seek is sent on release.
+        var dragFraction by remember { mutableStateOf<Float?>(null) }
+        val shown = dragFraction ?: progress
+        val thumb by animateDpAsState(if (barHovered || dragFraction != null) 14.dp else 10.dp, tween(150), label = "islandThumb")
         BoxWithConstraints(
             Modifier
                 .weight(1f)
-                .height(14.dp)
+                .height(20.dp)
+                .hoverable(hoverSource)
                 .pointerInput(total) {
                     detectTapGestures { offset -> if (total > 0) onSeek((offset.x / size.width).coerceIn(0f, 1f) * 100f) }
+                }.pointerInput(total) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { offset -> if (total > 0) dragFraction = (offset.x / size.width).coerceIn(0f, 1f) },
+                        onHorizontalDrag = { change, _ ->
+                            if (total > 0) dragFraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                        },
+                        onDragEnd = {
+                            dragFraction?.let { onSeek(it * 100f) }
+                            dragFraction = null
+                        },
+                        onDragCancel = { dragFraction = null },
+                    )
                 },
             contentAlignment = Alignment.CenterStart,
         ) {
+            val barWidth = maxWidth
             Box(Modifier.fillMaxWidth().height(4.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f)))
-            Box(Modifier.fillMaxWidth(progress).height(4.dp).clip(CircleShape).background(Color.White))
+            Box(
+                Modifier
+                    .fillMaxWidth(shown)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(Brush.horizontalGradient(listOf(Color(0xFF9EE7FF), Color(0xFFB98CFF)))),
+            )
+            // The dot: a white bead with a soft halo, riding the end of the played part.
+            Box(
+                Modifier
+                    .offset(x = (barWidth * shown) - thumb / 2)
+                    .size(thumb + 8.dp)
+                    .padding(4.dp)
+                    .drawBehind {
+                        drawCircle(Color.White.copy(alpha = 0.22f), radius = size.minDimension / 2f + 4.dp.toPx())
+                    }.clip(CircleShape)
+                    .background(Color.White),
+            )
         }
         Spacer(Modifier.width(8.dp))
         Text(formatTime(total), color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
