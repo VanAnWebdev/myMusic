@@ -775,6 +775,8 @@ internal fun AppleMusicThinSlider(
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     onValueChangeFinished: (() -> Unit)? = null,
+    // Personal fork: the progress bar gets the island's look — gradient fill and a glowing bead.
+    glow: Boolean = false,
 ) {
     // The slider's "phồng" is a track that thickens while touched/dragged — same spring feel as
     // the button inflate, expressed the way a bar can.
@@ -805,21 +807,36 @@ internal fun AppleMusicThinSlider(
                 // keeps both ends of the bar equally round, and gives the played portion the flat
                 // right edge Apple's own bar has.
                 val fraction = value.coerceIn(0f, 1f)
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(trackHeight)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(AppleMusicTrackInactive),
-                ) {
+                if (glow) {
+                    com.maxrave.simpmusic.ui.component.GlowTrack(
+                        fraction = fraction,
+                        height = trackHeight,
+                        inactiveColor = AppleMusicTrackInactive,
+                        activeBrush =
+                            if (activeColor == AppleMusicTrackActive) {
+                                com.maxrave.simpmusic.ui.component.GlowTrackBrush
+                            } else {
+                                androidx.compose.ui.graphics.SolidColor(activeColor)
+                            },
+                        dotRadius = trackHeight * 0.78f,
+                    )
+                } else {
                     Box(
                         modifier =
                             Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(fraction)
-                                .background(activeColor),
-                    )
+                                .fillMaxWidth()
+                                .height(trackHeight)
+                                .clip(RoundedCornerShape(percent = 50))
+                                .background(AppleMusicTrackInactive),
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth(fraction)
+                                    .background(activeColor),
+                        )
+                    }
                 }
             },
             thumb = {
@@ -1169,6 +1186,7 @@ internal fun ColumnScope.AppleMusicPlaybackControls(
             onValueChange = { actions.onSliderChange(it * 100f) },
             onValueChangeFinished = actions.onSliderChangeFinished,
             modifier = Modifier.fillMaxWidth(),
+            glow = true,
         )
     }
     AppleMusicTimesRow(state = state, typography = typography, modifier = Modifier.padding(top = 6.dp))

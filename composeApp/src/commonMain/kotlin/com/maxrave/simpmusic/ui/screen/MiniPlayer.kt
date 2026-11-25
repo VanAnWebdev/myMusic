@@ -1356,20 +1356,13 @@ private fun CapsuleProgress(
                             onValueChange = onValueChange,
                             onValueChangeFinished = onValueChangeFinished,
                             modifier = Modifier.fillMaxWidth(),
-                            track = { sliderState ->
-                                SliderDefaults.Track(
-                                    modifier = Modifier.height(trackHeight),
-                                    enabled = true,
-                                    sliderState = sliderState,
-                                    colors =
-                                        SliderDefaults.colors().copy(
-                                            thumbColor = progressColor,
-                                            activeTrackColor = progressColor,
-                                            inactiveTrackColor = textColor.copy(alpha = 0.25f),
-                                        ),
-                                    thumbTrackGapSize = 0.dp,
-                                    drawTick = { _, _ -> },
-                                    drawStopIndicator = null,
+                            // Personal fork: the island's look — gradient fill and a glowing bead at the playhead.
+                            track = {
+                                com.maxrave.simpmusic.ui.component.GlowTrack(
+                                    fraction = sliderValue / 100f,
+                                    height = trackHeight,
+                                    inactiveColor = textColor.copy(alpha = 0.25f),
+                                    dotRadius = if (trackHeight > 2.dp) 6.dp else 4.dp,
                                 )
                             },
                             thumb = {
