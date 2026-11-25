@@ -2,6 +2,10 @@ package com.maxrave.simpmusic.ui.icon
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.addPathNodes
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathNode
 import androidx.compose.ui.graphics.vector.VectorPath
@@ -11,8 +15,9 @@ import kotlin.math.abs
 import kotlin.math.max
 
 /**
- * Material Symbols Rounded, generated from fonts.gstatic.com at
- * opsz 24 / wght 400 / GRAD 0 / ROND 50. One receiver object so call sites read
+ * Personal fork: Lucide icons (lucide.dev, ISC licence), converted from lucide-static 0.460.0 —
+ * 2-unit round strokes on a 24 grid, a few transport/"on" states filled. Built by [lucideIcon].
+ * (Upstream used Material Symbols Rounded; [buildSimpIcon] below is kept from that.) One receiver object so call sites read
  * `SimpIcons.PlayArrow`, mirroring how androidx exposes `Icons.Rounded.PlayArrow`.
  */
 object SimpIcons {
@@ -285,3 +290,37 @@ private fun ImageVector.rebuilt(scale: Float): ImageVector {
     }
     return builder.build()
 }
+
+
+/** Lucide's stroke width on its 24-unit grid. */
+private const val LUCIDE_STROKE = 2f
+
+/**
+ * Personal fork: builds a Lucide icon from its SVG path data. Every path is stroked (round caps and
+ * joins, as Lucide draws them); [filled] also fills them, for the solid play/pause/heart states.
+ * Black, like every ImageVector here: Icon() tints it.
+ */
+internal fun lucideIcon(
+    name: String,
+    filled: Boolean,
+    vararg paths: String,
+): ImageVector =
+    ImageVector
+        .Builder(
+            name = name,
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            paths.forEach { d ->
+                addPath(
+                    pathData = addPathNodes(d),
+                    fill = if (filled) SolidColor(Color.Black) else null,
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = LUCIDE_STROKE,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                )
+            }
+        }.build()

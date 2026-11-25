@@ -58,7 +58,7 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Icon
+import com.maxrave.simpmusic.ui.motion.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton

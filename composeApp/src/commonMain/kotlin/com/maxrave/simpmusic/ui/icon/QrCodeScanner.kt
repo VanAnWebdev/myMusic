@@ -1,215 +1,26 @@
 package com.maxrave.simpmusic.ui.icon
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathFillType
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
-import androidx.compose.ui.unit.dp
 
-@Suppress("CheckReturnValue")
+// Lucide "scan-qr-code" (ISC licence, lucide.dev).
 val SimpIcons.QrCodeScanner: ImageVector
   get() {
     if (_QrCodeScanner != null) {
       return _QrCodeScanner!!
     }
     _QrCodeScanner =
-      ImageVector.Builder(
-          name = "QrCodeScanner",
-          defaultWidth = 24.dp,
-          defaultHeight = 24.dp,
-          viewportWidth = 24f,
-          viewportHeight = 24f,
-        )
-        .apply {
-          path(
-            fill = SolidColor(Color.Black),
-            fillAlpha = 1f,
-            stroke = null,
-            strokeAlpha = 1f,
-            strokeLineWidth = 1f,
-            strokeLineCap = StrokeCap.Butt,
-            strokeLineJoin = StrokeJoin.Bevel,
-            strokeLineMiter = 1f,
-            pathFillType = PathFillType.Companion.NonZero,
-          ) {
-            moveTo(3.25f, 7.02f)
-            quadTo(2.93f, 7.02f, 2.72f, 6.8f)
-            reflectiveQuadTo(2.5f, 6.27f)
-            verticalLineTo(3.4f)
-            quadTo(2.5f, 3.02f, 2.76f, 2.76f)
-            reflectiveQuadTo(3.4f, 2.5f)
-            horizontalLineTo(6.27f)
-            quadToRelative(0.32f, 0f, 0.53f, 0.22f)
-            reflectiveQuadTo(7.02f, 3.25f)
-            reflectiveQuadTo(6.8f, 3.78f)
-            reflectiveQuadTo(6.27f, 4f)
-            horizontalLineTo(4f)
-            verticalLineTo(6.27f)
-            quadTo(4f, 6.59f, 3.78f, 6.8f)
-            reflectiveQuadTo(3.25f, 7.02f)
-            close()
-            moveTo(3.4f, 21.5f)
-            quadToRelative(-0.38f, 0f, -0.64f, -0.26f)
-            reflectiveQuadTo(2.5f, 20.6f)
-            verticalLineTo(17.73f)
-            quadToRelative(0f, -0.32f, 0.22f, -0.53f)
-            reflectiveQuadTo(3.25f, 16.98f)
-            reflectiveQuadTo(3.78f, 17.2f)
-            reflectiveQuadTo(4f, 17.73f)
-            verticalLineTo(20f)
-            horizontalLineTo(6.27f)
-            quadToRelative(0.32f, 0f, 0.53f, 0.22f)
-            reflectiveQuadToRelative(0.22f, 0.53f)
-            reflectiveQuadTo(6.8f, 21.28f)
-            reflectiveQuadTo(6.27f, 21.5f)
-            horizontalLineTo(3.4f)
-            close()
-            moveToRelative(14.33f, 0f)
-            quadToRelative(-0.32f, 0f, -0.53f, -0.22f)
-            reflectiveQuadTo(16.98f, 20.75f)
-            reflectiveQuadTo(17.2f, 20.22f)
-            reflectiveQuadTo(17.73f, 20f)
-            horizontalLineTo(20f)
-            verticalLineTo(17.73f)
-            quadToRelative(0f, -0.32f, 0.22f, -0.53f)
-            reflectiveQuadToRelative(0.53f, -0.22f)
-            reflectiveQuadToRelative(0.53f, 0.22f)
-            reflectiveQuadToRelative(0.22f, 0.53f)
-            verticalLineTo(20.6f)
-            quadToRelative(0f, 0.38f, -0.26f, 0.64f)
-            reflectiveQuadTo(20.6f, 21.5f)
-            horizontalLineTo(17.73f)
-            close()
-            moveTo(20.22f, 6.8f)
-            quadTo(20f, 6.59f, 20f, 6.27f)
-            verticalLineTo(4f)
-            horizontalLineTo(17.73f)
-            quadTo(17.41f, 4f, 17.2f, 3.78f)
-            reflectiveQuadTo(16.98f, 3.25f)
-            reflectiveQuadTo(17.2f, 2.72f)
-            reflectiveQuadTo(17.73f, 2.5f)
-            horizontalLineTo(20.6f)
-            quadToRelative(0.38f, 0f, 0.64f, 0.26f)
-            reflectiveQuadTo(21.5f, 3.4f)
-            verticalLineTo(6.27f)
-            quadToRelative(0f, 0.32f, -0.22f, 0.53f)
-            reflectiveQuadTo(20.75f, 7.02f)
-            reflectiveQuadTo(20.22f, 6.8f)
-            close()
-            moveTo(17.22f, 18.58f)
-            verticalLineTo(17.22f)
-            horizontalLineToRelative(1.36f)
-            verticalLineToRelative(1.36f)
-            horizontalLineTo(17.22f)
-            close()
-            moveToRelative(0f, -2.71f)
-            verticalLineTo(14.51f)
-            horizontalLineToRelative(1.36f)
-            verticalLineToRelative(1.36f)
-            horizontalLineTo(17.22f)
-            close()
-            moveToRelative(-1.36f, 1.36f)
-            verticalLineTo(15.87f)
-            horizontalLineToRelative(1.36f)
-            verticalLineToRelative(1.36f)
-            horizontalLineTo(15.87f)
-            close()
-            moveToRelative(-1.36f, 1.36f)
-            verticalLineTo(17.22f)
-            horizontalLineToRelative(1.36f)
-            verticalLineToRelative(1.36f)
-            horizontalLineTo(14.51f)
-            close()
-            moveTo(13.15f, 17.22f)
-            verticalLineTo(15.87f)
-            horizontalLineToRelative(1.36f)
-            verticalLineToRelative(1.36f)
-            horizontalLineTo(13.15f)
-            close()
-            moveToRelative(2.71f, -2.71f)
-            verticalLineTo(13.15f)
-            horizontalLineToRelative(1.36f)
-            verticalLineToRelative(1.36f)
-            horizontalLineTo(15.87f)
-            close()
-            moveToRelative(-1.36f, 1.36f)
-            verticalLineTo(14.51f)
-            horizontalLineToRelative(1.36f)
-            verticalLineToRelative(1.36f)
-            horizontalLineTo(14.51f)
-            close()
-            moveTo(13.15f, 14.51f)
-            verticalLineTo(13.15f)
-            horizontalLineToRelative(1.36f)
-            verticalLineToRelative(1.36f)
-            horizontalLineTo(13.15f)
-            close()
-            moveToRelative(0.9f, -3.66f)
-            quadToRelative(-0.38f, 0f, -0.64f, -0.26f)
-            reflectiveQuadTo(13.15f, 9.94f)
-            verticalLineTo(6.32f)
-            quadToRelative(0f, -0.38f, 0.26f, -0.64f)
-            reflectiveQuadTo(14.06f, 5.42f)
-            horizontalLineToRelative(3.62f)
-            quadToRelative(0.38f, 0f, 0.64f, 0.26f)
-            reflectiveQuadToRelative(0.26f, 0.64f)
-            verticalLineTo(9.94f)
-            quadToRelative(0f, 0.38f, -0.26f, 0.64f)
-            reflectiveQuadToRelative(-0.64f, 0.26f)
-            horizontalLineTo(14.06f)
-            close()
-            moveTo(6.32f, 18.58f)
-            quadToRelative(-0.38f, 0f, -0.64f, -0.26f)
-            reflectiveQuadTo(5.42f, 17.67f)
-            verticalLineTo(14.06f)
-            quadToRelative(0f, -0.38f, 0.26f, -0.64f)
-            reflectiveQuadTo(6.33f, 13.15f)
-            horizontalLineTo(9.94f)
-            quadToRelative(0.38f, 0f, 0.64f, 0.26f)
-            reflectiveQuadToRelative(0.26f, 0.64f)
-            verticalLineToRelative(3.62f)
-            quadToRelative(0f, 0.38f, -0.26f, 0.64f)
-            reflectiveQuadTo(9.94f, 18.58f)
-            horizontalLineTo(6.32f)
-            close()
-            moveToRelative(0f, -7.73f)
-            quadToRelative(-0.38f, 0f, -0.64f, -0.26f)
-            reflectiveQuadTo(5.42f, 9.94f)
-            verticalLineTo(6.32f)
-            quadToRelative(0f, -0.38f, 0.26f, -0.64f)
-            reflectiveQuadTo(6.33f, 5.42f)
-            horizontalLineTo(9.94f)
-            quadToRelative(0.38f, 0f, 0.64f, 0.26f)
-            reflectiveQuadToRelative(0.26f, 0.64f)
-            verticalLineTo(9.94f)
-            quadToRelative(0f, 0.38f, -0.26f, 0.64f)
-            reflectiveQuadTo(9.94f, 10.85f)
-            horizontalLineTo(6.32f)
-            close()
-            moveToRelative(0.29f, 6.54f)
-            horizontalLineTo(9.65f)
-            verticalLineTo(14.35f)
-            horizontalLineTo(6.62f)
-            verticalLineToRelative(3.04f)
-            close()
-            moveToRelative(0f, -7.73f)
-            horizontalLineTo(9.65f)
-            verticalLineTo(6.62f)
-            horizontalLineTo(6.62f)
-            verticalLineTo(9.65f)
-            close()
-            moveToRelative(7.73f, 0f)
-            horizontalLineToRelative(3.04f)
-            verticalLineTo(6.62f)
-            horizontalLineTo(14.35f)
-            verticalLineTo(9.65f)
-            close()
-          }
-        }
-        .buildSimpIcon()
+      lucideIcon(
+        "QrCodeScanner",
+        filled = false,
+        "M17 12v4a1 1 0 0 1-1 1h-4",
+        "M17 3h2a2 2 0 0 1 2 2v2",
+        "M17 8V7",
+        "M21 17v2a2 2 0 0 1-2 2h-2",
+        "M3 7V5a2 2 0 0 1 2-2h2",
+        "M7 17h.01",
+        "M7 21H5a2 2 0 0 1-2-2v-2",
+        "M8 7h3a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-3a1 1 0 0 1 -1 -1v-3a1 1 0 0 1 1 -1Z",
+      )
     return _QrCodeScanner!!
   }
 

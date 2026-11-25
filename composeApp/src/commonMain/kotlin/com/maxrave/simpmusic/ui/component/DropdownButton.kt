@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 // (1.12.0-alpha01 ≈ androidx alpha19) still ships the member. A wildcard tolerates both shapes;
 // a specific import compiles on exactly one target.
 import androidx.compose.material3.*
+import com.maxrave.simpmusic.ui.motion.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

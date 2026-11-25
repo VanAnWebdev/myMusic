@@ -1,6 +1,6 @@
 package com.maxrave.simpmusic.ui.component
 
-import androidx.compose.material3.Icon
+import com.maxrave.simpmusic.ui.motion.Icon
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import com.maxrave.simpmusic.expect.ui.PlatformBackdrop
