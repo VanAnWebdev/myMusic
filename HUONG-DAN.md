@@ -40,3 +40,20 @@ Dùng khi muốn nghe dở máy này, mở máy kia nghe tiếp, và đăng nh�
 ## 4. Lấy bản sửa mới từ tác giả (khi cần)
 
 Nếu YouTube đổi gì đó làm app hỏng, tác giả gốc thường sửa trong `baotrq/project-2b` / `baotrq/core` hoặc `maxrave-dev/SimpMusic`. Có thể nhờ Claude chép riêng các bản sửa đó vào repo này, rồi push để GitHub build lại. Không cần nhận nguyên bản của tác giả.
+
+## 5. Phím tắt trên máy tính
+
+| Phím | Tác dụng |
+|---|---|
+| `Space` | Phát / tạm dừng |
+| `←` / `→` | Tua lùi / tới 5 giây |
+| `Ctrl + ←` / `Ctrl + →` | Bài trước / bài sau |
+| `↑` / `↓` | Tăng / giảm âm lượng |
+| `M` | Tắt / bật tiếng |
+| `L` | Thích bài đang phát |
+| `S` | Trộn bài |
+| `R` | Lặp lại |
+| `Ctrl + F` | Mở tìm kiếm |
+| `F11` | Toàn màn hình |
+
+Phím tắt không chạy khi đang gõ chữ trong ô tìm kiếm.

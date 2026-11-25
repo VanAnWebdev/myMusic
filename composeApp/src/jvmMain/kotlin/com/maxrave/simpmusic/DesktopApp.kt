@@ -42,6 +42,7 @@ import com.maxrave.simpmusic.extension.DesktopWindowChrome
 import com.maxrave.simpmusic.ui.component.CustomTitleBar
 import com.maxrave.simpmusic.ui.mini_player.MiniPlayerManager
 import com.maxrave.simpmusic.ui.mini_player.MiniPlayerWindow
+import com.maxrave.simpmusic.ui.shortcut.DesktopShortcuts
 import com.maxrave.simpmusic.update.DesktopForkUpdater
 import com.maxrave.simpmusic.ui.theme.isDarkTheme
 import com.maxrave.simpmusic.utils.ComposeResUtils
@@ -362,6 +363,8 @@ fun runDesktopApp(args: Array<String> = emptyArray()) {
         // Windows and Linux keep the native title bar (on Linux, undecorated + transparent
         // breaks on some distros/WMs). Only macOS draws the custom one.
         val nativeTitleBar = !isMacOS
+        // Personal fork: keyboard shortcuts for the main window (see DesktopShortcuts).
+        val desktopShortcuts = remember(windowState) { DesktopShortcuts(sharedViewModel, windowState) }
         // Publish whether the custom title bar will be mounted so getScreenSizeInfo() can
         // subtract the 40dp strip it occupies above the content (see DesktopWindowChrome).
         LaunchedEffect(nativeTitleBar) {
@@ -377,6 +380,7 @@ fun runDesktopApp(args: Array<String> = emptyArray()) {
             transparent = !nativeTitleBar,
             state = windowState,
             visible = isVisible,
+            onKeyEvent = desktopShortcuts::handle,
         ) {
             // Waits for the window's native peer, which exists only once it has been shown.
             if (System.getProperty("os.name", "").contains("Windows", ignoreCase = true)) {

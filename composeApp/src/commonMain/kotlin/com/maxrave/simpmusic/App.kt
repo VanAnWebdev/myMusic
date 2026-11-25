@@ -144,6 +144,7 @@ import com.maxrave.simpmusic.ui.screen.player.content.DESKTOP_PLAYER_PANEL
 import com.maxrave.simpmusic.ui.screen.player.content.DesktopCoverFlight
 import com.maxrave.simpmusic.ui.screen.player.content.DesktopPlayerMotion
 import com.maxrave.simpmusic.ui.screen.player.content.DesktopPlayerTab
+import com.maxrave.simpmusic.ui.shortcut.ShortcutSignals
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -188,6 +189,12 @@ fun App(
 ) {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass
     val navController = rememberNavController()
+    // Personal fork: Ctrl+F on the desktop window opens Search.
+    LaunchedEffect(navController) {
+        ShortcutSignals.openSearch.collect {
+            navController.navigate(SearchDestination) { launchSingleTop = true }
+        }
+    }
     // Fork: an Android window wide enough for the Windows layout, which is a tablet held sideways. The
     // capsule needs the width: below this a portrait tablet keeps the rail and the in-window player.
     val isTabletShell =
