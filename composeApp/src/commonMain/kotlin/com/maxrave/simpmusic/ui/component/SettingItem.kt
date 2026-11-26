@@ -196,8 +196,55 @@ private fun SettingRowIcon(
     icon: ImageVector,
     tint: Color,
 ) {
-    Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(SettingRowIconSize))
+    // Personal fork: an iOS-style coloured tile; greyed when the row is disabled.
+    SettingIconTile(icon, enabled = tint.alpha > 0.5f)
     Spacer(Modifier.width(SettingRowIconGap))
+}
+
+/** Personal fork: the gradients the settings tiles cycle through, one per glyph (stable per icon). */
+private val SettingTileGradients =
+    listOf(
+        listOf(Color(0xFF5B3FD6), Color(0xFFB5A8F5)),
+        listOf(Color(0xFF0E7C66), Color(0xFF5FD3B0)),
+        listOf(Color(0xFFD9483B), Color(0xFFF7A84A)),
+        listOf(Color(0xFF1E5FD8), Color(0xFF7FB8FF)),
+        listOf(Color(0xFFC2307A), Color(0xFFFF8EC0)),
+        listOf(Color(0xFF7A5A12), Color(0xFFF2C84B)),
+        listOf(Color(0xFF2B7A2E), Color(0xFF8BDB6A)),
+        listOf(Color(0xFF4B4F63), Color(0xFF9AA0B8)),
+    )
+
+/** Fixed tiles for the common glyphs, so neighbouring rows rarely share a colour. */
+private val SettingTileFixed =
+    mapOf(
+        "Palette" to 0, "GraphicEq" to 4, "Lyrics" to 2, "Sync" to 3, "Storage" to 7, "Info" to 1,
+        "Favorite" to 4, "LogoDev" to 5, "Language" to 3, "Flag" to 2, "DarkMode" to 0, "PlayCircle" to 4,
+        "WaterDrop" to 1, "Person" to 3, "Key" to 5, "Download" to 1, "Timer" to 2, "Tune" to 0,
+    )
+
+/** Personal fork: a settings glyph on a rounded gradient tile, white on colour, like iOS Settings. */
+@Composable
+fun SettingIconTile(
+    icon: ImageVector,
+    enabled: Boolean = true,
+) {
+    val colors =
+        if (enabled) {
+            SettingTileGradients[
+                SettingTileFixed[icon.name] ?: ((icon.name.hashCode() and Int.MAX_VALUE) % SettingTileGradients.size)
+            ]
+        } else {
+            listOf(Color(0xFF3A3A40), Color(0xFF55555C))
+        }
+    Box(
+        Modifier
+            .size(SettingRowIconSize)
+            .clip(RoundedCornerShape(8.dp))
+            .background(androidx.compose.ui.graphics.Brush.linearGradient(colors)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = Color.White.copy(alpha = if (enabled) 1f else 0.5f), modifier = Modifier.size(18.dp))
+    }
 }
 
 @Composable
@@ -237,8 +284,14 @@ fun SettingGroup(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clip(SettingGroupShape)
-                    .background(cardColor.copy(alpha = 0.5f))
+                    .then(
+                        // Personal fork: on the dark desktop shell the card is a glass pane like the rest.
+                        if (LocalDesktopShell.current && LocalIsDarkTheme.current) {
+                            Modifier.glassSurface(SettingGroupShape, Color.White.copy(alpha = 0.05f))
+                        } else {
+                            Modifier.clip(SettingGroupShape).background(cardColor.copy(alpha = 0.5f))
+                        },
+                    )
                     .drawWithContent {
                         // The first row's hairline would sit on the card's own edge, so that strip is
                         // left undrawn. Clipped rather than painted over: the card is translucent.
@@ -265,9 +318,9 @@ private fun settingGroupColor(): Color =
         MaterialTheme.colorScheme.surfaceContainer
     }
 
-private val SettingGroupShape = RoundedCornerShape(14.dp)
+private val SettingGroupShape = RoundedCornerShape(18.dp)
 private val SettingRowPaddingHorizontal = 16.dp
-private val SettingRowIconSize = 22.dp
+private val SettingRowIconSize = 30.dp
 private val SettingRowIconGap = 14.dp
 
 // Where a row's text starts; the hairline above it starts here too.

@@ -179,6 +179,18 @@ compose.desktop {
         // The same ceiling conveyor.conf sets, and for the same reason: without one the heap grows to
         // a quarter of physical RAM before the GC feels any pressure.
         jvmArgs += "-Xmx512m"
+        // Personal fork: the .msi is made by jpackage, not Conveyor, so the heap-trim flags Conveyor's
+        // launcher had no room for (see conveyor.conf) fit here: hand unused heap back to Windows
+        // after a minute idle, and keep less slack around the live set.
+        jvmArgs += "-XX:+UseG1GC"
+        jvmArgs += "-XX:MinHeapFreeRatio=10"
+        jvmArgs += "-XX:MaxHeapFreeRatio=30"
+        jvmArgs += "-XX:G1PeriodicGCInterval=60000"
+        jvmArgs += "-XX:+UseStringDeduplication"
+        jvmArgs += "-XX:ReservedCodeCacheSize=96m"
+        jvmArgs += "-XX:MaxMetaspaceSize=192m"
+        jvmArgs += "-Xss512k"
+        jvmArgs += "-XX:CICompilerCount=2"
 
         nativeDistributions {
             appResourcesRootDir = rootDir.resolve("mpv-natives/")

@@ -228,6 +228,9 @@ fun runDesktopApp(args: Array<String> = emptyArray()) {
     // later turns it off in Settings keeps it off (the marker is never cleared).
     runBlocking {
         val store = getKoin().get<DataStoreManager>()
+        // A player that opens silent reads as broken audio, not as a choice: a muted level left
+        // over from the last session (a stray M or ↓) comes back at full volume.
+        if (store.playerVolume.first() < 0.02f) store.setPlayerVolume(1f)
         if (store.getString("fork_glass_default_applied").first() == null) {
             store.setEnableLiquidGlass(true)
             store.putString("fork_glass_default_applied", "1")
@@ -514,6 +517,14 @@ fun runDesktopApp(args: Array<String> = emptyArray()) {
                                         },
                                     ),
                                 )
+                            }
+                            // Personal fork: decoded covers live in native (Skia) memory, outside the
+                            // Java heap cap; 64 MB holds a screenful of covers several times over.
+                            .memoryCache {
+                                coil3.memory.MemoryCache
+                                    .Builder()
+                                    .maxSizeBytes(64L * 1024 * 1024)
+                                    .build()
                             }.diskCachePolicy(CachePolicy.ENABLED)
                             .networkCachePolicy(CachePolicy.ENABLED)
                             .diskCache(

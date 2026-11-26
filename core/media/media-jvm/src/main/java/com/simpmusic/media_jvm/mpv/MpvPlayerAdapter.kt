@@ -218,7 +218,9 @@ class MpvPlayerAdapter(
 
     private val precachedPlayers = ConcurrentHashMap<String, PrecachedPlayer>()
     private var precacheEnabled = true
-    private val maxPrecacheCount = 2
+    // Personal fork: one track ahead, not two — each precached track is a whole mpv core with its own
+    // demuxer cache (~40 MB), and the next track is the only one a skip or crossfade reaches.
+    private val maxPrecacheCount = 1
     private var precacheJob: Job? = null
 
     // Crossfade system

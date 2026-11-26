@@ -13,6 +13,9 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import com.maxrave.simpmusic.viewModel.SharedViewModel
 import com.maxrave.simpmusic.viewModel.UIEvent
+import multiplatform.network.cmptoast.ToastGravity
+import multiplatform.network.cmptoast.showToast
+import kotlin.math.roundToInt
 
 /**
  * Personal fork: keyboard shortcuts for the main desktop window.
@@ -69,19 +72,29 @@ class DesktopShortcuts(
 
     private fun currentVolume(): Float = sharedViewModel.controllerState.value.volume
 
+    // Every volume change made from the keyboard says so: a stray M or ↓ must never silence the app
+    // without the user seeing why (the level is remembered across restarts).
+    private fun announce(volume: Float) {
+        val percent = (volume * 100).roundToInt()
+        showToast(if (percent == 0) "🔇 Đã tắt tiếng (bấm M để bật lại)" else "🔊 Âm lượng $percent%", ToastGravity.Bottom)
+    }
+
     private fun changeVolume(delta: Float): Boolean {
         val next = (currentVolume() + delta).coerceIn(0f, 1f)
+        announce(next)
         return send(UIEvent.UpdateVolume(next))
     }
 
     private fun toggleMute(): Boolean {
         val volume = currentVolume()
-        return if (volume > 0f) {
+        val next = if (volume > 0f) {
             volumeBeforeMute = volume
-            send(UIEvent.UpdateVolume(0f))
+            0f
         } else {
-            send(UIEvent.UpdateVolume(volumeBeforeMute.takeIf { it > 0f } ?: 1f))
+            volumeBeforeMute.takeIf { it > 0f } ?: 1f
         }
+        announce(next)
+        return send(UIEvent.UpdateVolume(next))
     }
 
     private fun toggleFullscreen(): Boolean {

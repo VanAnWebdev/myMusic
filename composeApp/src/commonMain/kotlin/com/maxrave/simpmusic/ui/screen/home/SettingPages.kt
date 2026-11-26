@@ -232,7 +232,7 @@ private fun SettingHomeRow(
                 // Hairline above each row from where the text starts, like SettingItem's; the card
                 // clips the first row's away.
                 .drawBehind {
-                    val inset = (16 + 22 + 14).dp.toPx()
+                    val inset = (16 + 30 + 14).dp.toPx()
                     val rtl = layoutDirection == LayoutDirection.Rtl
                     drawLine(
                         color = dividerColor,
@@ -240,11 +240,19 @@ private fun SettingHomeRow(
                         end = Offset(if (rtl) size.width - inset else size.width, 0f),
                         strokeWidth = 0.5.dp.toPx(),
                     )
-                }.background(if (highlighted) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                }.background(
+                    when {
+                        !highlighted -> Color.Transparent
+                        // Personal fork: on the dark glass shell the selected category glows instead.
+                        com.maxrave.simpmusic.ui.theme.LocalDesktopShell.current && com.maxrave.simpmusic.ui.theme.LocalIsDarkTheme.current ->
+                            Color.White.copy(alpha = 0.12f)
+                        else -> MaterialTheme.colorScheme.secondaryContainer
+                    },
+                )
                 .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
+        com.maxrave.simpmusic.ui.component.SettingIconTile(icon)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = typo().titleSmall, color = MaterialTheme.colorScheme.onSurface)
