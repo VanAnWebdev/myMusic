@@ -178,7 +178,7 @@ compose.desktop {
         jvmArgs += "--add-opens=java.base/java.nio=ALL-UNNAMED"
         // The same ceiling conveyor.conf sets, and for the same reason: without one the heap grows to
         // a quarter of physical RAM before the GC feels any pressure.
-        jvmArgs += "-Xmx512m"
+        jvmArgs += "-Xmx384m"
         // Personal fork: the .msi is made by jpackage, not Conveyor, so the heap-trim flags Conveyor's
         // launcher had no room for (see conveyor.conf) fit here: hand unused heap back to Windows
         // after a minute idle, and keep less slack around the live set.

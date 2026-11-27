@@ -46,6 +46,7 @@ import com.maxrave.simpmusic.ui.shortcut.DesktopShortcuts
 import com.maxrave.simpmusic.update.DesktopForkUpdater
 import com.maxrave.simpmusic.ui.theme.isDarkTheme
 import com.maxrave.simpmusic.utils.ComposeResUtils
+import com.maxrave.simpmusic.utils.MemoryTrimmer
 import com.maxrave.simpmusic.utils.NetworkFirstInterceptor
 import com.maxrave.simpmusic.utils.VersionManager
 import com.maxrave.simpmusic.viewModel.SharedViewModel
@@ -68,6 +69,7 @@ import com.maxrave.simpmusic.expect.ui.WindowTitleBarState
 import com.maxrave.simpmusic.expect.ui.applyWindowsTitleBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
 import multiplatform.network.cmptoast.ToastHost
 import multiplatform.network.cmptoast.showToast
@@ -318,6 +320,17 @@ fun runDesktopApp(args: Array<String> = emptyArray()) {
                 isVisible = true
                 windowState.isMinimized = false
                 DesktopDeepLinkHandler.consumePendingUri()
+            }
+        }
+        // Personal fork: while the window is hidden (tray) or minimised, give memory back to the OS —
+        // once shortly after, then every two minutes. Reopening it stops the loop.
+        LaunchedEffect(isVisible, windowState.isMinimized) {
+            if (!isVisible || windowState.isMinimized) {
+                delay(3_000)
+                while (true) {
+                    withContext(Dispatchers.IO) { MemoryTrimmer.trim() }
+                    delay(120_000)
+                }
             }
         }
         val openAppString = stringResource(Res.string.open_app)
